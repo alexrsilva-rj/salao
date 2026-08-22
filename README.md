@@ -89,6 +89,85 @@ salao-api
 
 ---
 
+## Ambiente de Desenvolvimento (Dev)
+
+O projeto inclui um `docker-compose.yml` que sobe toda a infraestrutura necessária localmente com um único comando — sem precisar instalar PostgreSQL ou Keycloak na máquina.
+
+### Serviços incluídos
+
+| Serviço | Imagem | Porta local | Descrição |
+|---|---|---|---|
+| `postgres` | `postgres:16-alpine` | `5432` | Banco da aplicação + Keycloak |
+| `keycloak` | `keycloak:25.0` | `8180` | OAuth2 / JWT (realm `salao-realm` importado automaticamente) |
+| `salao-api` | build local | `8080` | Spring Boot API |
+
+### Estrutura de arquivos de suporte
+
+```
+salao-root/
+├── docker-compose.yml
+├── keycloak/
+│   └── realms/
+│       ├── salao-realm.json           # Export do realm (importado automaticamente)
+│       └── salao-realm-users-0.json   # Usuários do realm
+└── postgres/
+    └── init/
+        └── 01-keycloak-db.sql         # Cria o banco keycloak_db automaticamente
+```
+
+### Passo a passo
+
+**1. Gerar o JAR da aplicação:**
+
+```bash
+./gradlew :salao-api:bootJar
+```
+
+**2. Subir todos os serviços:**
+
+```bash
+docker compose up --build
+```
+
+> Na primeira execução o Keycloak pode levar ~60s para inicializar. A `salao-api` aguarda o Keycloak ficar saudável antes de subir.
+
+**3. Subir apenas a infraestrutura** (útil ao rodar a API pela IDE):
+
+```bash
+docker compose up postgres keycloak
+```
+
+E então execute a aplicação com as variáveis de ambiente abaixo:
+
+```bash
+DB_URL=jdbc:postgresql://localhost:5432/salao_db \
+DB_USER=admin \
+DB_PASSWORD=admin \
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8180/realms/salao-realm \
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://localhost:8180/realms/salao-realm/protocol/openid-connect/certs \
+./gradlew :salao-api:bootRun
+```
+
+### URLs após subir
+
+| Serviço | URL |
+|---|---|
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| Keycloak Admin Console | http://localhost:8180 (admin / admin) |
+
+### Parar e limpar
+
+```bash
+# Parar os serviços (mantém volumes)
+docker compose down
+
+# Parar e remover volumes (banco zerado)
+docker compose down -v
+```
+
+---
+
 ## Como executar
 
 ### 1. Build do JAR
