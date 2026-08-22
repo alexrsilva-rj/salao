@@ -10,36 +10,49 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
+/**
+ * Filtro de autenticação via header {@code x-api-token}.
+ * O token é configurado via variável de ambiente {@code API_TOKEN_SECRET}
+ * e injetado pelo {@link com.salao.security.config.SecurityConfig}.
+ *
+ * <p>Autenticações bem-sucedidas recebem a authority {@code ROLE_RECEPTION},
+ * concedendo acesso administrativo completo. Nunca use o token padrão em produção.</p>
+ */
 public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
 
-   private static final String API_TOKEN_HEADER = "x-api-token";
-   private static final String VALID_API_TOKEN = "salao-secret-api-token-123"; // Exemplo (em prod, consulte cache/banco)
+    private static final String API_TOKEN_HEADER = "x-api-token";
 
-   @Override
-   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-           throws ServletException, IOException {
+    private final String validApiToken;
 
-       String apiToken = request.getHeader(API_TOKEN_HEADER);
+    public ApiTokenAuthenticationFilter(String validApiToken) {
+        this.validApiToken = validApiToken;
+    }
 
-       if (apiToken != null && !apiToken.isBlank()) {
-           if (VALID_API_TOKEN.equals(apiToken)) {
-               List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                       new SimpleGrantedAuthority("SCOPE_agendamento:escrever")
-               );
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-               UsernamePasswordAuthenticationToken authentication =
-                       new UsernamePasswordAuthenticationToken("ApiTokenUser", null, authorities);
+        String apiToken = request.getHeader(API_TOKEN_HEADER);
 
-               SecurityContextHolder.getContext().setAuthentication(authentication);
-           } else {
-               response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token de API inválido.");
-               return;
-           }
-       }
+        if (apiToken != null && !apiToken.isBlank()) {
+            if (validApiToken.equals(apiToken)) {
+                List<SimpleGrantedAuthority> authorities = List.of(
+                        new SimpleGrantedAuthority("ROLE_RECEPTION"),
+                        new SimpleGrantedAuthority("SCOPE_agendamento:escrever")
+                );
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken("ApiTokenUser", null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token de API inválido.");
+                return;
+            }
+        }
 
-       filterChain.doFilter(request, response);
-   }
+        filterChain.doFilter(request, response);
+    }
 }

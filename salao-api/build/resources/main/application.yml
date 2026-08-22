@@ -8,7 +8,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false   # LGPD: desabilitado para evitar log de dados pessoais (PII) em SQL
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -19,5 +19,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://192.168.18.200:8080/realms/salao-realm
-          jwk-set-uri: http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://192.168.18.200:8080/realms/salao-realm}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs}
+
+# LGPD: Token de API externalizado — sobrescreva API_TOKEN_SECRET em produção
+api:
+  token:
+    secret: ${API_TOKEN_SECRET:salao-secret-api-token-123}

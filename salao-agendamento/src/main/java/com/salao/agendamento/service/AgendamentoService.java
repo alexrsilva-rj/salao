@@ -8,6 +8,7 @@ import com.salao.agendamento.repository.ProfissionalRepository;
 import com.salao.agendamento.repository.ServicoRepository;
 import com.salao.cliente.model.Cliente;
 import com.salao.cliente.service.ClienteService;
+import com.salao.common.security.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,40 +21,57 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AgendamentoService {
 
-   private final AgendamentoRepository agendamentoRepository;
-   private final ProfissionalRepository profissionalRepository;
-   private final ServicoRepository servicoRepository;
-   private final ClienteService clienteService;
+    private final AgendamentoRepository agendamentoRepository;
+    private final ProfissionalRepository profissionalRepository;
+    private final ServicoRepository servicoRepository;
+    private final ClienteService clienteService;
 
-   @Transactional
-   public Agendamento criarAgendamento(UUID clienteId, UUID profissionalId, UUID servicoId, LocalDateTime dataHoraInicio) {
-       Cliente cliente = clienteService.buscarPorId(clienteId);
-       Profissional profissional = profissionalRepository.findById(profissionalId)
-               .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
-       Servico servico = servicoRepository.findById(servicoId)
-               .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
+    @Transactional
+    public Agendamento criarAgendamento(UUID clienteId, UUID profissionalId,
+                                        UUID servicoId, LocalDateTime dataHoraInicio) {
+        Cliente cliente = clienteService.buscarPorId(clienteId);
+        Profissional profissional = profissionalRepository.findById(profissionalId)
+                .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
+        Servico servico = servicoRepository.findById(servicoId)
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
 
-       LocalDateTime dataHoraFim = dataHoraInicio.plusMinutes(servico.getDuracaoMinutos());
+        LocalDateTime dataHoraFim = dataHoraInicio.plusMinutes(servico.getDuracaoMinutos());
 
-       List<Agendamento> conflitos = agendamentoRepository.findConflitantes(profissionalId, dataHoraInicio, dataHoraFim);
-       if (!conflitos.isEmpty()) {
-           throw new IllegalStateException("O profissional já possui um agendamento conflitante neste horário.");
-       }
+        List<Agendamento> conflitos = agendamentoRepository.findConflitantes(
+                profissionalId, dataHoraInicio, dataHoraFim);
+        if (!conflitos.isEmpty()) {
+            throw new IllegalStateException(
+                    "O profissional já possui um agendamento conflitante neste horário.");
+        }
 
-       Agendamento agendamento = Agendamento.builder()
-               .cliente(cliente)
-               .profissional(profissional)
-               .servico(servico)
-               .dataHoraInicio(dataHoraInicio)
-               .dataHoraFim(dataHoraFim)
-               .status("PENDENTE")
-               .build();
+        Agendamento agendamento = Agendamento.builder()
+                .cliente(cliente)
+                .profissional(profissional)
+                .servico(servico)
+                .dataHoraInicio(dataHoraInicio)
+                .dataHoraFim(dataHoraFim)
+                .status("PENDENTE")
+                .build();
 
-       return agendamentoRepository.save(agendamento);
-   }
+        Agendamento salvo = agendamentoRepository.save(agendamento);
 
-   @Transactional(readOnly = true)
-   public List<Agendamento> listarAgendamentos() {
-       return agendamentoRepository.findAll();
-   }
+        // Registra atividade do titular para o job de expurgo LGPD
+        clienteService.registrarAtividade(clienteId);
+
+        return salvo;
+    }
+
+    /**
+     * Lista agendamentos com isolamento por perfil:
+     * - ROLE_CUSTOMER: apenas os próprios agendamentos
+     * - ROLE_RECEPTION / ROLE_PROFESSIONAL: todos
+     */
+    @Transactional(readOnly = true)
+    public List<Agendamento> listarAgendamentos(UserContext userContext) {
+        if (userContext.isCustomer()) {
+            return agendamentoRepository.findByClienteKeycloakUserId(
+                    userContext.getKeycloakUserId());
+        }
+        return agendamentoRepository.findAll();
+    }
 }
