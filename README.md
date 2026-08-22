@@ -1,6 +1,6 @@
 # API Salão de Beleza
 
-> Sistema de gestão para salão de beleza com agendamento, cadastro de clientes, controle financeiro e emissão de relatórios.
+> Sistema de gestão para salão de beleza com agendamento, cadastro de clientes, controle financeiro e emissão de relatórios. Desenvolvido com conformidade à **LGPD (Lei nº 13.709/2018)** via *Privacy by Design*.
 
 ---
 
@@ -10,15 +10,17 @@
 2. [Stack de Tecnologias](#stack-de-tecnologias)
 3. [Arquitetura e Módulos](#arquitetura-e-módulos)
 4. [Pré-requisitos](#pré-requisitos)
-5. [Como executar](#como-executar)
-6. [Endpoints da API](#endpoints-da-api)
-7. [Segurança e Autenticação](#segurança-e-autenticação)
-8. [Banco de Dados](#banco-de-dados)
-9. [Configuração da Aplicação](#configuração-da-aplicação)
-10. [Deploy e Infraestrutura](#deploy-e-infraestrutura)
-11. [CI/CD (GitLab)](#cicd-gitlab)
-12. [Coleção Postman](#coleção-postman)
-13. [Regras de Negócio](#regras-de-negócio)
+5. [Ambiente de Desenvolvimento (Dev)](#ambiente-de-desenvolvimento-dev)
+6. [Como executar](#como-executar)
+7. [Endpoints da API](#endpoints-da-api)
+8. [Segurança e Autenticação](#segurança-e-autenticação)
+9. [Banco de Dados](#banco-de-dados)
+10. [Configuração da Aplicação](#configuração-da-aplicação)
+11. [Conformidade LGPD](#conformidade-lgpd)
+12. [Deploy e Infraestrutura](#deploy-e-infraestrutura)
+13. [CI/CD (GitLab)](#cicd-gitlab)
+14. [Coleção Postman](#coleção-postman)
+15. [Regras de Negócio](#regras-de-negócio)
 
 ---
 
@@ -31,7 +33,8 @@
 | **Build**       | Gradle (multi-módulo)   |
 | **Arquitetura** | Monólito Modular        |
 | **Banco**       | PostgreSQL              |
-| **Auth**        | Keycloak (OAuth2 / JWT) |
+| **Auth**        | Keycloak (OAuth2 / JWT) + RBAC |
+| **LGPD**        | Privacy by Design       |
 | **Versão**      | `1.0.0`                 |
 
 A aplicação é um **monólito modular** — empacotada em um único JAR executável (`salao-api-1.0.0.jar`), organizada internamente em módulos Gradle com responsabilidades de domínio bem delimitadas.
@@ -40,13 +43,14 @@ A aplicação é um **monólito modular** — empacotada em um único JAR execut
 
 ## Stack de Tecnologias
 
-- **Spring Boot 3.3.4** — Web, Data JPA, Security, Validation, OAuth2 Resource Server
+- **Spring Boot 3.3.4** — Web, Data JPA, Security, Validation, OAuth2 Resource Server, AOP
 - **Java 21**
 - **PostgreSQL** — banco de dados relacional
 - **Flyway** — migrações de schema (`flyway-core` + `flyway-database-postgresql`)
-- **Keycloak** — provedor OAuth2 / OpenID Connect
+- **Keycloak** — provedor OAuth2 / OpenID Connect com RBAC (roles por perfil)
 - **SpringDoc OpenAPI 2.5.0** — Swagger UI em `/swagger-ui/**`
 - **Lombok** — redução de boilerplate
+- **Spring AOP** — trilha de auditoria automática via `@Auditavel`
 - **Docker** + **Kubernetes** — containerização e orquestração
 - **GitLab CI/CD** — pipeline de build, package e deploy
 
@@ -58,9 +62,9 @@ O projeto é um **Gradle multi-módulo** com a seguinte estrutura:
 
 ```
 salao-root
-├── salao-common         # Utilitários compartilhados (sem código ainda)
-├── salao-security       # Configuração Spring Security + filtro API Token
-├── salao-cliente        # Domínio: cadastro de clientes
+├── salao-common         # Utilitários transversais: @PII, @Auditavel, UserContext
+├── salao-security       # RBAC, JWT converter, filtro API Token, auditoria AOP
+├── salao-cliente        # Domínio: clientes, consentimento, anonimização, portabilidade
 ├── salao-agendamento    # Domínio: agendamentos, profissionais, serviços e relatórios
 ├── salao-financeiro     # Domínio: pagamentos e comissões
 └── salao-api            # Ponto de entrada: controllers, OpenAPI, main class, Flyway
@@ -71,8 +75,8 @@ salao-root
 ```
 salao-api
   ├── salao-common
-  ├── salao-security
-  ├── salao-cliente        → salao-common
+  ├── salao-security       → salao-common
+  ├── salao-cliente        → salao-common, salao-security
   ├── salao-agendamento    → salao-common, salao-cliente
   └── salao-financeiro     → salao-common, salao-agendamento
 ```
@@ -84,7 +88,86 @@ salao-api
 - Java 21+
 - Gradle (ou use o Wrapper `./gradlew`)
 - PostgreSQL rodando em `localhost:5432` com banco `salao_db`
-- Keycloak rodando com o realm `salao-realm` configurado
+- Keycloak rodando com o realm `salao-realm` e as roles `reception`, `professional`, `customer` configuradas
+
+---
+
+## Ambiente de Desenvolvimento (Dev)
+
+O projeto inclui um `docker-compose.yml` que sobe toda a infraestrutura necessária localmente com um único comando — sem precisar instalar PostgreSQL ou Keycloak na máquina.
+
+### Serviços incluídos
+
+| Serviço | Imagem | Porta local | Descrição |
+|---|---|---|---|
+| `postgres` | `postgres:16-alpine` | `5432` | Banco da aplicação + Keycloak |
+| `keycloak` | `keycloak:25.0` | `8180` | OAuth2 / JWT (realm `salao-realm` importado automaticamente) |
+| `salao-api` | build local | `8080` | Spring Boot API |
+
+### Estrutura de arquivos de suporte
+
+```
+salao-root/
+├── docker-compose.yml
+├── keycloak/
+│   └── realms/
+│       ├── salao-realm.json           # Export do realm (importado automaticamente)
+│       └── salao-realm-users-0.json   # Usuários do realm
+└── postgres/
+    └── init/
+        └── 01-keycloak-db.sql         # Cria o banco keycloak_db automaticamente
+```
+
+### Passo a passo
+
+**1. Gerar o JAR da aplicação:**
+
+```bash
+./gradlew :salao-api:bootJar
+```
+
+**2. Subir todos os serviços:**
+
+```bash
+docker compose up --build
+```
+
+> Na primeira execução o Keycloak pode levar ~60s para inicializar. A `salao-api` aguarda o Keycloak ficar saudável antes de subir.
+
+**3. Subir apenas a infraestrutura** (útil ao rodar a API pela IDE):
+
+```bash
+docker compose up postgres keycloak
+```
+
+E então execute a aplicação com as variáveis de ambiente abaixo:
+
+```bash
+DB_URL=jdbc:postgresql://localhost:5432/salao_db \
+DB_USER=admin \
+DB_PASSWORD=admin \
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8180/realms/salao-realm \
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://localhost:8180/realms/salao-realm/protocol/openid-connect/certs \
+./gradlew :salao-api:bootRun
+```
+
+### URLs após subir
+
+| Serviço | URL |
+|---|---|
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| Keycloak Admin Console | http://localhost:8180 (admin / admin) |
+
+### Parar e limpar
+
+```bash
+# Parar os serviços (mantém volumes)
+docker compose down
+
+# Parar e remover volumes (banco zerado)
+docker compose down -v
+```
 
 ---
 
@@ -110,6 +193,7 @@ Ou configurando variáveis de ambiente para sobrescrever os padrões:
 DB_URL=jdbc:postgresql://localhost:5432/salao_db \
 DB_USER=admin \
 DB_PASSWORD=admin \
+API_TOKEN_SECRET=seu-token-seguro \
 java -jar salao-api/build/libs/salao-api-1.0.0.jar
 ```
 
@@ -124,6 +208,7 @@ docker run -p 8080:8080 \
   -e DB_URL=jdbc:postgresql://host.docker.internal:5432/salao_db \
   -e DB_USER=admin \
   -e DB_PASSWORD=admin \
+  -e API_TOKEN_SECRET=seu-token-seguro \
   salao-api:1.0.0
 ```
 
@@ -135,81 +220,101 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 ## Endpoints da API
 
 > **Base URL:** `http://localhost:8080`  
-> Todos os endpoints exigem autenticação via **JWT Keycloak** ou header **`x-api-token`** com a authority `SCOPE_agendamento:escrever`.
+> Autenticação via **JWT Keycloak** ou header **`x-api-token`**. O acesso é controlado por **role** — veja [Segurança e Autenticação](#segurança-e-autenticação).
 
 ### Clientes — `/api/clientes`
 
-| Método | Path               | Descrição                  |
-|--------|--------------------|----------------------------|
-| `POST` | `/api/clientes`    | Cadastrar novo cliente (body JSON) |
-| `GET`  | `/api/clientes`    | Listar todos os clientes   |
-| `GET`  | `/api/clientes/{id}` | Buscar cliente por UUID  |
+| Método | Path | Role mínima | Descrição |
+|--------|------|-------------|-----------|
+| `POST` | `/api/clientes` | CUSTOMER | Cadastrar novo cliente (`consentimentoTermosAceito: true` obrigatório) |
+| `GET` | `/api/clientes` | CUSTOMER | Listar clientes (CUSTOMER vê apenas o próprio; RECEPTION vê todos) |
+| `GET` | `/api/clientes/{id}` | CUSTOMER | Buscar cliente por UUID |
+| `PUT` | `/api/clientes/{id}` | CUSTOMER | Atualizar dados (nome, telefone) — Art. 18, IV LGPD |
+| `DELETE` | `/api/clientes/{id}` | **RECEPTION** | Anonimizar cliente — Art. 18, VI LGPD |
+| `GET` | `/api/clientes/{id}/consentimento` | CUSTOMER | Consultar consentimentos |
+| `PUT` | `/api/clientes/{id}/consentimento` | CUSTOMER | Atualizar opt-in/opt-out de notificações e marketing |
+| `GET` | `/api/clientes/{id}/dados-pessoais` | CUSTOMER | Exportar todos os dados pessoais — Art. 18, V LGPD |
 
 ### Agendamentos — `/api/agendamentos`
 
-| Método | Path                 | Descrição                          | Query Params |
-|--------|----------------------|------------------------------------|---|
-| `POST` | `/api/agendamentos`  | Criar novo agendamento             | `clienteId`, `profissionalId`, `servicoId`, `dataHoraInicio` |
-| `GET`  | `/api/agendamentos`  | Listar todos os agendamentos       | — |
+| Método | Path | Role mínima | Descrição |
+|--------|------|-------------|-----------|
+| `POST` | `/api/agendamentos` | CUSTOMER | Criar novo agendamento |
+| `GET` | `/api/agendamentos` | CUSTOMER | Listar agendamentos (CUSTOMER: apenas os próprios) |
 
 ### Catálogo — `/api/catalogo`
 
-| Método | Path                          | Descrição               |
-|--------|-------------------------------|-------------------------|
-| `GET`  | `/api/catalogo/profissionais` | Listar profissionais    |
-| `GET`  | `/api/catalogo/servicos`      | Listar serviços         |
+| Método | Path | Role mínima | Descrição |
+|--------|------|-------------|-----------|
+| `GET` | `/api/catalogo/profissionais` | qualquer autenticado | Listar profissionais |
+| `GET` | `/api/catalogo/servicos` | qualquer autenticado | Listar serviços |
 
 ### Financeiro — `/api/financeiro`
 
-| Método | Path              | Descrição                            | Query Params |
-|--------|-------------------|--------------------------------------|---|
-| `POST` | `/api/financeiro` | Registrar pagamento e calcular comissão | `agendamentoId`, `percentualComissao`, `formaPagamento` |
+| Método | Path | Role mínima | Descrição |
+|--------|------|-------------|-----------|
+| `POST` | `/api/financeiro` | **RECEPTION** | Registrar pagamento e calcular comissão |
 
 ### Relatórios — `/api/relatorios/agendamentos`
 
-| Método | Path                           | Descrição                        | Query Params |
-|--------|--------------------------------|----------------------------------|---|
-| `GET`  | `/api/relatorios/agendamentos` | Relatório de agendamentos por período | `inicio`, `fim` (ISO DateTime) |
+| Método | Path | Role mínima | Descrição |
+|--------|------|-------------|-----------|
+| `GET` | `/api/relatorios/agendamentos` | **RECEPTION** | Relatório por período (`inicio`, `fim` — ISO DateTime) |
 
 ### Endpoints públicos (sem autenticação)
 
-| Path               | Descrição              |
-|--------------------|------------------------|
-| `/swagger-ui/**`   | Swagger UI interativo  |
-| `/v3/api-docs/**`  | Especificação OpenAPI  |
+| Path | Descrição |
+|------|-----------|
+| `/swagger-ui/**` | Swagger UI interativo |
+| `/v3/api-docs/**` | Especificação OpenAPI |
 
 ---
 
 ## Segurança e Autenticação
-
-A aplicação suporta dois mecanismos de autenticação em paralelo:
 
 ### 1. OAuth2 JWT via Keycloak (principal)
 
 - Spring configurado como **OAuth2 Resource Server**
 - Tokens JWT validados contra o JWKS do Keycloak
 - Realm: `salao-realm`
-- Scope necessário: `agendamento:escrever`
+- Roles lidas do claim `realm_access.roles` e mapeadas automaticamente para authorities Spring Security
+
+**Roles disponíveis:**
+
+| Role no Keycloak | Authority Spring | Nível de acesso |
+|---|---|---|
+| `reception` | `ROLE_RECEPTION` | Acesso administrativo completo |
+| `professional` | `ROLE_PROFESSIONAL` | Catálogo + agendamentos |
+| `customer` | `ROLE_CUSTOMER` | Apenas os próprios dados |
+
+> O conversor JWT normaliza automaticamente: `reception` → `ROLE_RECEPTION`, `ROLE_RECEPTION` → `ROLE_RECEPTION`.
 
 ### 2. API Token via header `x-api-token` (alternativo)
 
 - Filtro customizado `ApiTokenAuthenticationFilter`
-- Token de desenvolvimento: `salao-secret-api-token-123`
-- Em produção, a validação deve consultar cache ou banco de dados
+- Token configurado via variável de ambiente `API_TOKEN_SECRET`
+- Concede `ROLE_RECEPTION` — acesso administrativo completo
+- Padrão de desenvolvimento: `salao-secret-api-token-123`
 
-> **Atenção:** Não use o token estático em ambientes de produção.
+> **Atenção:** Sempre defina `API_TOKEN_SECRET` em produção. Nunca use o valor padrão.
 
-**Fluxo da cadeia de segurança:**
+### Fluxo da cadeia de segurança
 
 ```
 Requisição
     └── ApiTokenAuthenticationFilter
-            ├── x-api-token válido  →  injeta auth, passa adiante
-            ├── x-api-token inválido  →  HTTP 401
-            └── sem header  →  passa para OAuth2 JWT
+            ├── x-api-token válido   →  ROLE_RECEPTION, passa adiante
+            ├── x-api-token inválido →  HTTP 401
+            └── sem header           →  passa para OAuth2 JWT
     └── OAuth2 Resource Server (JWT Keycloak)
-    └── @PreAuthorize("hasAuthority('SCOPE_agendamento:escrever')")
+            └── realm_access.roles → ROLE_RECEPTION / ROLE_PROFESSIONAL / ROLE_CUSTOMER
+    └── @PreAuthorize("hasRole(...)")  [método a método]
+    └── Isolamento de dados por UserContext (ROLE_CUSTOMER filtra por keycloakUserId)
 ```
+
+### Trilha de Auditoria
+
+Métodos de serviço anotados com `@Auditavel` geram automaticamente registros na tabela `audit_log` via AOP. Cada registro contém: `usuarioId`, `role`, `acao`, `entidade`, `entidadeId`, `ipOrigem` e `dataHora`.
 
 ---
 
@@ -222,6 +327,8 @@ O schema é gerenciado pelo **Flyway** e está em `salao-api/src/main/resources/
 | `V1__create_table_cliente.sql` | Tabela `cliente` |
 | `V2__create_agendamento_modules.sql` | Tabelas `profissional`, `servico`, `agendamento` |
 | `V3__create_financeiro_module.sql` | Tabela `financeiro` |
+| `V4__add_lgpd_fields_cliente.sql` | Campos LGPD: `keycloak_user_id`, consentimentos, `anonimizado`, `ultima_atividade` + índices |
+| `V5__create_audit_log.sql` | Tabela `audit_log` com índices em `usuario_id`, `data_hora`, `acao` |
 
 As migrações são executadas automaticamente ao iniciar a aplicação.
 
@@ -236,13 +343,72 @@ Arquivo: `salao-api/src/main/resources/application.yml`
 | `DB_URL` | `jdbc:postgresql://localhost:5432/salao_db` | URL do banco PostgreSQL |
 | `DB_USER` | `admin` | Usuário do banco |
 | `DB_PASSWORD` | `admin` | Senha do banco |
+| `API_TOKEN_SECRET` | `salao-secret-api-token-123` | Token do header `x-api-token` — **altere em produção** |
+| `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` | `http://192.168.18.200:8080/realms/salao-realm` | Issuer URI do Keycloak |
+| `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` | `http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs` | JWKS URI do Keycloak |
 
-Configurações de segurança (Keycloak):
+> `show-sql` está desabilitado (`false`) para evitar que dados pessoais (PII) apareçam em plain-text nos logs.
 
-| Parâmetro | Valor |
+---
+
+## Conformidade LGPD
+
+O sistema implementa os princípios de **Privacy by Design** (Art. 6º e 46º da LGPD):
+
+### Controle de Acesso por Perfil (Art. 6º, IX — Responsabilização)
+
+Três roles com isolamento lógico de dados:
+- **ROLE_CUSTOMER** — vê apenas o próprio registro e agendamentos
+- **ROLE_PROFESSIONAL** — acesso ao catálogo e agendamentos (sem PII de outros clientes)
+- **ROLE_RECEPTION** — acesso operacional completo com trilha de auditoria obrigatória
+
+### Minimização de Dados (Art. 6º, III)
+
+- Formulário de cadastro coleta apenas **nome**, **e-mail** e **telefone**
+- Controllers retornam DTOs (nunca entidades JPA diretas) — controle granular de exposição
+- `show-sql: false` — dados pessoais não aparecem em logs
+
+### Gestão de Consentimento (Art. 8º)
+
+Ao criar um cliente, o campo `consentimentoTermosAceito: true` é **obrigatório** (base legal).  
+Consentimentos separados por finalidade:
+
+| Campo | Finalidade |
 |---|---|
-| Issuer URI | `http://192.168.18.200:8080/realms/salao-realm` |
-| JWK Set URI | `http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs` |
+| `consentimentoTermosAceito` | Termos de Uso — base legal para cadastro |
+| `consentimentoNotificacoes` | Lembretes transacionais (opt-in) |
+| `consentimentoMarketing` | Campanhas de marketing (opt-in separado) |
+
+Datas de aceite e revogação registradas automaticamente.
+
+### Direitos do Titular (Art. 18)
+
+| Direito | Endpoint | Art. 18 |
+|---|---|---|
+| Acesso | `GET /api/clientes/{id}` | Inciso I |
+| Retificação | `PUT /api/clientes/{id}` | Inciso IV |
+| Portabilidade | `GET /api/clientes/{id}/dados-pessoais` | Inciso V |
+| Esquecimento / Anonimização | `DELETE /api/clientes/{id}` | Inciso VI |
+| Gestão de Consentimento | `GET/PUT /api/clientes/{id}/consentimento` | Inciso VI |
+
+> A exclusão **não remove fisicamente** o registro — os dados de PII são sobrescritos (nome, e-mail, telefone), mas o histórico financeiro é preservado para atender obrigações legais fiscais.
+
+### Retenção e Expurgo Automatizado
+
+Um `@Scheduled` job executa todo domingo às 03:00 e anonimiza automaticamente clientes sem nenhuma atividade há mais de **2 anos**, evitando acúmulo desnecessário de dados pessoais.
+
+### Trilha de Auditoria
+
+Toda operação sobre dados de titulares gera um registro na tabela `audit_log` com:
+- Identificador do usuário (`keycloakUserId`)
+- Role no momento do acesso
+- Ação realizada e entidade acessada
+- IP de origem da requisição
+- Data e hora precisas
+
+### Rastreabilidade de PII
+
+Campos de dados pessoais são marcados com a anotação `@PII` (em `salao-common`) para fins de inventário de dados, auditoria e geração de relatórios de conformidade.
 
 ---
 
@@ -264,6 +430,7 @@ Variáveis injetadas no pod:
 - `SPRING_PROFILES_ACTIVE=prod`
 - `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-service:5432/salao_db`
 - `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI`
+- `API_TOKEN_SECRET` ← **definir via Secret do Kubernetes em produção**
 
 ---
 
@@ -283,7 +450,7 @@ Pipeline definido em `.gitlab-ci.yml` com três estágios:
 
 A pasta `postman/` contém:
 
-- `collection.json` — coleção **"API Salão de Beleza - Modular"** com requisições para todos os endpoints, incluindo obtenção de token Keycloak (Password Grant) e exemplos com `x-api-token`
+- `collection.json` — coleção **"API Salão de Beleza - Modular"** com requisições para todos os endpoints, incluindo obtenção de token Keycloak (Password Grant), exemplos com `x-api-token` e os novos endpoints LGPD (consentimento, portabilidade, anonimização)
 - `env.json` — ambiente local pré-configurado com variáveis `keycloak_url`, `realm`, `api_url` e `api_token`
 
 ---
@@ -293,8 +460,12 @@ A pasta `postman/` contém:
 1. **Conflito de horário:** Ao criar um agendamento, o sistema verifica se o profissional já possui um agendamento ativo (não `CANCELADO`) sobreposto ao período solicitado.
 2. **Horário de fim calculado automaticamente:** `dataHoraFim = dataHoraInicio + servico.duracaoMinutos`
 3. **E-mail único por cliente:** Clientes devem ter e-mails únicos no sistema.
-4. **Cálculo de comissão:**
+4. **Consentimento obrigatório no cadastro:** `consentimentoTermosAceito: true` é exigido ao criar um cliente — lança `400 Bad Request` caso ausente.
+5. **Cálculo de comissão:**
    - `valorComissao = valorTotal × (percentualComissao / 100)`
    - `valorLiquidoSalao = valorTotal − valorComissao`
-5. **Status padrão:** Agendamentos criados com `PENDENTE`; registros financeiros criados com `PAGO`.
-6. **CQRS-lite para relatórios:** `AgendamentoQueryService` usa `EntityManager` com JPQL diretamente para leituras otimizadas, separado dos serviços de escrita.
+6. **Status padrão:** Agendamentos criados com `PENDENTE`; registros financeiros criados com `PAGO`.
+7. **CQRS-lite para relatórios:** `AgendamentoQueryService` usa `EntityManager` com JPQL diretamente para leituras otimizadas, separado dos serviços de escrita.
+8. **Anonimização idempotente:** Chamar `DELETE /api/clientes/{id}` em um cliente já anonimizado retorna `204` sem efeito.
+9. **Expurgo automático:** Clientes sem atividade há mais de 2 anos são anonimizados automaticamente todo domingo às 03:00.
+10. **Atividade registrada:** Toda criação de agendamento atualiza `ultimaAtividade` do cliente titular.

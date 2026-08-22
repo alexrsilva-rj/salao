@@ -1,0 +1,92 @@
+services:
+
+  # ──────────────────────────────────────────
+  # PostgreSQL
+  # ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: salao-postgres
+    environment:
+      POSTGRES_DB: salao_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d salao_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salao-net
+
+  # ──────────────────────────────────────────
+  # Keycloak (OAuth2 / JWT issuer)
+  # Porta local: 8180 -> container: 8080
+  # Admin UI: http://localhost:8180  (admin / admin)
+  # ──────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: salao-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: admin
+      KC_DB_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/realms/master || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - salao-net
+
+  # ──────────────────────────────────────────
+  # salao-api (Spring Boot)
+  # Pré-requisito: ./gradlew :salao-api:bootJar
+  # Swagger: http://localhost:8080/swagger-ui/index.html
+  # ──────────────────────────────────────────
+  salao-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: salao-api
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/salao_db
+      DB_USER: admin
+      DB_PASSWORD: admin
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/salao-realm
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/salao-realm/protocol/openid-connect/certs
+      SPRING_PROFILES_ACTIVE: local
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - salao-net
+
+volumes:
+  postgres_data:
+
+networks:
+  salao-net:
+    driver: bridge
