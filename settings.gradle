@@ -1,0 +1,8 @@
+rootProject.name = 'salao-root'
+
+include 'salao-common'
+include 'salao-cliente'
+include 'salao-agendamento'
+include 'salao-financeiro'
+include 'salao-security'
+include 'salao-api'
