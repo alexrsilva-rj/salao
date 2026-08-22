@@ -1,0 +1,174 @@
+{
+ "info": {
+   "name": "API Salão de Beleza - Modular",
+   "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "item": [
+   {
+     "name": "Autenticação Keycloak",
+     "item": [
+       {
+         "name": "Obter Token OAuth2 (Password Grant)",
+         "event": [
+           {
+             "listen": "test",
+             "script": {
+               "exec": [
+                 "var jsonData = pm.response.json();",
+                 "if (jsonData.access_token) {",
+                 "    pm.environment.set(\"bearer_token\", jsonData.access_token);",
+                 "    console.log(\"Token capturado e salvo com sucesso!\");",
+                 "}"
+               ],
+               "type": "text/javascript"
+             }
+           }
+         ],
+         "request": {
+           "method": "POST",
+           "header": [
+             {
+               "key": "Content-Type",
+               "value": "application/x-www-form-urlencoded"
+             }
+           ],
+           "body": {
+             "mode": "urlencoded",
+             "urlencoded": [
+               {
+                 "key": "grant_type",
+                 "value": "password",
+                 "type": "text"
+               },
+               {
+                 "key": "client_id",
+                 "value": "seu-client-id",
+                 "type": "text"
+               },
+               {
+                 "key": "username",
+                 "value": "seu_usuario",
+                 "type": "text"
+               },
+               {
+                 "key": "password",
+                 "value": "sua_senha",
+                 "type": "text"
+               },
+               {
+                 "key": "scope",
+                 "value": "agendamento:escrever",
+                 "type": "text"
+               }
+             ]
+           },
+           "url": {
+             "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+             "host": [
+               "{{keycloak_url}}"
+             ],
+             "path": [
+               "realms",
+               "{{realm}}",
+               "protocol",
+               "openid-connect",
+               "token"
+             ]
+           }
+         }
+       }
+     ]
+   },
+   {
+     "name": "Agendamentos",
+     "item": [
+       {
+         "name": "Criar Agendamento (Com Escopo Keycloak)",
+         "request": {
+           "auth": {
+             "type": "bearer",
+             "bearer": [
+               {
+                 "key": "token",
+                 "value": "{{bearer_token}}",
+                 "type": "string"
+               }
+             ]
+           },
+           "method": "POST",
+           "header": [],
+           "url": {
+             "raw": "{{api_url}}/api/agendamentos?clienteId=UUID_CLIENTE_AQUI&profissionalId=UUID_PROFISSIONAL_AQUI&servicoId=UUID_SERVICO_AQUI&dataHoraInicio=2026-06-01T10:00:00",
+             "host": [
+               "{{api_url}}"
+             ],
+             "path": [
+               "api",
+               "agendamentos"
+             ],
+             "query": [
+               {
+                 "key": "clienteId",
+                 "value": "UUID_CLIENTE_AQUI"
+               },
+               {
+                 "key": "profissionalId",
+                 "value": "UUID_PROFISSIONAL_AQUI"
+               },
+               {
+                 "key": "servicoId",
+                 "value": "UUID_SERVICO_AQUI"
+               },
+               {
+                 "key": "dataHoraInicio",
+                 "value": "2026-06-01T10:00:00"
+               }
+             ]
+           }
+         }
+       },
+       {
+         "name": "Criar Agendamento (Com x-api-token alternativo)",
+         "request": {
+           "method": "POST",
+           "header": [
+             {
+               "key": "x-api-token",
+               "value": "{{api_token}}",
+               "type": "text"
+             }
+           ],
+           "url": {
+             "raw": "{{api_url}}/api/agendamentos?clienteId=UUID_CLIENTE_AQUI&profissionalId=UUID_PROFISSIONAL_AQUI&servicoId=UUID_SERVICO_AQUI&dataHoraInicio=2026-06-01T10:00:00",
+             "host": [
+               "{{api_url}}"
+             ],
+             "path": [
+               "api",
+               "agendamentos"
+             ],
+             "query": [
+               {
+                 "key": "clienteId",
+                 "value": "UUID_CLIENTE_AQUI"
+               },
+               {
+                 "key": "profissionalId",
+                 "value": "UUID_PROFISSIONAL_AQUI"
+               },
+               {
+                 "key": "servicoId",
+                 "value": "UUID_SERVICO_AQUI"
+               },
+               {
+                 "key": "dataHoraInicio",
+                 "value": "2026-06-01T10:00:00"
+               }
+             ]
+           }
+         }
+       }
+     ]
+   }
+ ]
+}
