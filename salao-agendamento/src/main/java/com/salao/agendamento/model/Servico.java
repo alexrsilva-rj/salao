@@ -29,5 +29,6 @@ public class Servico {
     // Let's use duracaoMinutos.
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 }
