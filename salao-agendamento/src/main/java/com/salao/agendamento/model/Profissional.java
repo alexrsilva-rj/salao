@@ -19,6 +19,7 @@ public class Profissional {
     private String especialidade;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 
     @Column(nullable = false)
