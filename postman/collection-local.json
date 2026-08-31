@@ -1,0 +1,523 @@
+{
+  "info": {
+    "name": "API Salão de Beleza - Modular",
+    "description": "Coleção completa da API do Salão de Beleza. Inclui autenticação Keycloak (OAuth2), gestão de clientes com conformidade LGPD, agendamentos, catálogo, financeiro e relatórios.\n\nBase URL: {{base_url}}\nKeycloak: {{keycloak_url}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "salao-api"
+  },
+  "variable": [
+    { "key": "base_url",     "value": "http://localhost:8081" },
+    { "key": "keycloak_url", "value": "http://localhost:8180" },
+    { "key": "realm",        "value": "salao-realm" },
+    { "key": "api_token",    "value": "salao-secret-api-token-123" },
+    { "key": "access_token", "value": "" },
+    { "key": "cliente_id",   "value": "" },
+    { "key": "agendamento_id","value": "" },
+    { "key": "profissional_id","value": "" },
+    { "key": "servico_id",   "value": "" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key",   "value": "x-api-token" },
+      { "key": "value", "value": "{{api_token}}" },
+      { "key": "in",    "value": "header" }
+    ]
+  },
+  "item": [
+
+    {
+      "name": "🔐 Autenticação",
+      "description": "Obtenção de tokens JWT via Keycloak (OAuth2 Password Grant). Use um dos requests abaixo conforme o perfil desejado. O token obtido é salvo automaticamente na variável {{access_token}} e passa a ser usado pelos demais requests.",
+      "item": [
+        {
+          "name": "Token — ROLE_RECEPTION (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set('access_token', json.access_token);",
+                  "    console.log('Token salvo com sucesso (RECEPTION)');",
+                  "} else {",
+                  "    console.error('Falha ao obter token:', JSON.stringify(json));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type",    "value": "password" },
+                { "key": "client_id",     "value": "salao-api" },
+                { "key": "client_secret", "value": "{{client_secret}}" },
+                { "key": "username",      "value": "admin" },
+                { "key": "password",      "value": "admin" },
+                { "key": "scope",         "value": "openid" }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": ["{{keycloak_url}}"],
+              "path": ["realms","{{realm}}","protocol","openid-connect","token"]
+            }
+          }
+        },
+        {
+          "name": "Token — ROLE_CUSTOMER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set('access_token', json.access_token);",
+                  "    console.log('Token salvo com sucesso (CUSTOMER)');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type",    "value": "password" },
+                { "key": "client_id",     "value": "salao-api" },
+                { "key": "client_secret", "value": "{{client_secret}}" },
+                { "key": "username",      "value": "cliente@salao.com" },
+                { "key": "password",      "value": "{{customer_password}}" },
+                { "key": "scope",         "value": "openid" }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": ["{{keycloak_url}}"],
+              "path": ["realms","{{realm}}","protocol","openid-connect","token"]
+            }
+          }
+        },
+        {
+          "name": "Token — ROLE_PROFESSIONAL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set('access_token', json.access_token);",
+                  "    console.log('Token salvo com sucesso (PROFESSIONAL)');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type",    "value": "password" },
+                { "key": "client_id",     "value": "salao-api" },
+                { "key": "client_secret", "value": "{{client_secret}}" },
+                { "key": "username",      "value": "profissional@salao.com" },
+                { "key": "password",      "value": "{{professional_password}}" },
+                { "key": "scope",         "value": "openid" }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": ["{{keycloak_url}}"],
+              "path": ["realms","{{realm}}","protocol","openid-connect","token"]
+            }
+          }
+        },
+        {
+          "name": "Usar API Token (sem Keycloak)",
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                { "key": "key",   "value": "x-api-token" },
+                { "key": "value", "value": "{{api_token}}" },
+                { "key": "in",    "value": "header" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/catalogo/servicos",
+              "host": ["{{base_url}}"],
+              "path": ["api","catalogo","servicos"]
+            },
+            "description": "Teste rápido usando o x-api-token (equivalente a ROLE_RECEPTION). Não requer Keycloak."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👤 Clientes",
+      "description": "Gestão de clientes com endpoints de conformidade LGPD.\n\nControle de acesso:\n- POST/GET/PUT: CUSTOMER (apenas o próprio) ou RECEPTION (todos)\n- DELETE (anonimizar): apenas RECEPTION\n- /consentimento e /dados-pessoais: CUSTOMER ou RECEPTION",
+      "item": [
+        {
+          "name": "Cadastrar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('cliente_id', json.id);",
+                  "    console.log('cliente_id salvo:', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria da Silva\",\n  \"email\": \"maria.silva@email.com\",\n  \"telefone\": \"(11) 99999-1234\",\n  \"consentimentoTermosAceito\": true,\n  \"consentimentoNotificacoes\": true,\n  \"consentimentoMarketing\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes"]
+            },
+            "description": "LGPD Art. 8º: consentimentoTermosAceito deve ser true. Retorna 400 caso contrário."
+          }
+        },
+        {
+          "name": "Cadastrar cliente — sem consentimento (espera 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Teste Sem Consentimento\",\n  \"email\": \"teste@email.com\",\n  \"telefone\": \"(11) 88888-0000\",\n  \"consentimentoTermosAceito\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes"]
+            },
+            "description": "Deve retornar 400 — consentimento obrigatório."
+          }
+        },
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/clientes",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes"]
+            },
+            "description": "RECEPTION: retorna todos. CUSTOMER: retorna apenas o próprio registro."
+          }
+        },
+        {
+          "name": "Buscar cliente por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{cliente_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes","{{cliente_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar cliente (Retificação — Art. 18, IV)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria da Silva Atualizada\",\n  \"telefone\": \"(11) 99999-5678\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{cliente_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes","{{cliente_id}}"]
+            },
+            "description": "Apenas nome e telefone podem ser atualizados (LGPD Art. 18, IV)."
+          }
+        },
+        {
+          "name": "Anonimizar cliente (Esquecimento — Art. 18, VI)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{cliente_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes","{{cliente_id}}"]
+            },
+            "description": "Requer ROLE_RECEPTION. Os dados pessoais (nome, e-mail, telefone) são sobrescritos. O histórico financeiro é preservado. Retorna 204."
+          }
+        },
+        {
+          "name": "Consultar consentimentos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{cliente_id}}/consentimento",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes","{{cliente_id}}","consentimento"]
+            },
+            "description": "Retorna o estado atual de todos os consentimentos do titular."
+          }
+        },
+        {
+          "name": "Atualizar consentimentos",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consentimentoNotificacoes\": true,\n  \"consentimentoMarketing\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{cliente_id}}/consentimento",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes","{{cliente_id}}","consentimento"]
+            },
+            "description": "Permite opt-in/opt-out independente para notificações e marketing (LGPD Art. 8º)."
+          }
+        },
+        {
+          "name": "Exportar dados pessoais (Portabilidade — Art. 18, V)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{cliente_id}}/dados-pessoais",
+              "host": ["{{base_url}}"],
+              "path": ["api","clientes","{{cliente_id}}","dados-pessoais"]
+            },
+            "description": "Retorna todos os dados do titular em formato JSON — portabilidade de dados (LGPD Art. 18, V)."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📅 Agendamentos",
+      "description": "Criação e listagem de agendamentos.\n\nControle de acesso:\n- CUSTOMER: vê apenas os próprios agendamentos\n- RECEPTION/PROFESSIONAL: veem todos",
+      "item": [
+        {
+          "name": "Criar agendamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('agendamento_id', json.id);",
+                  "    console.log('agendamento_id salvo:', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/agendamentos?clienteId={{cliente_id}}&profissionalId={{profissional_id}}&servicoId={{servico_id}}&dataHoraInicio=2025-12-15T10:00:00",
+              "host": ["{{base_url}}"],
+              "path": ["api","agendamentos"],
+              "query": [
+                { "key": "clienteId",       "value": "{{cliente_id}}" },
+                { "key": "profissionalId",  "value": "{{profissional_id}}" },
+                { "key": "servicoId",       "value": "{{servico_id}}" },
+                { "key": "dataHoraInicio",  "value": "2025-12-15T10:00:00" }
+              ]
+            },
+            "description": "Popule {{profissional_id}} e {{servico_id}} com IDs reais obtidos via /api/catalogo."
+          }
+        },
+        {
+          "name": "Listar agendamentos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/agendamentos",
+              "host": ["{{base_url}}"],
+              "path": ["api","agendamentos"]
+            },
+            "description": "CUSTOMER: apenas seus agendamentos. RECEPTION/PROFESSIONAL: todos."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🗂 Catálogo",
+      "description": "Consulta de profissionais e serviços disponíveis. Acessível por qualquer perfil autenticado.",
+      "item": [
+        {
+          "name": "Listar profissionais",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.collectionVariables.set('profissional_id', json[0].id);",
+                  "        console.log('profissional_id salvo:', json[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/catalogo/profissionais",
+              "host": ["{{base_url}}"],
+              "path": ["api","catalogo","profissionais"]
+            }
+          }
+        },
+        {
+          "name": "Listar serviços",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.collectionVariables.set('servico_id', json[0].id);",
+                  "        console.log('servico_id salvo:', json[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/catalogo/servicos",
+              "host": ["{{base_url}}"],
+              "path": ["api","catalogo","servicos"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "💰 Financeiro",
+      "description": "Registro de pagamentos e cálculo de comissão. Requer ROLE_RECEPTION.",
+      "item": [
+        {
+          "name": "Registrar pagamento",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/financeiro?agendamentoId={{agendamento_id}}&percentualComissao=20&formaPagamento=PIX",
+              "host": ["{{base_url}}"],
+              "path": ["api","financeiro"],
+              "query": [
+                { "key": "agendamentoId",      "value": "{{agendamento_id}}" },
+                { "key": "percentualComissao", "value": "20" },
+                { "key": "formaPagamento",     "value": "PIX" }
+              ]
+            },
+            "description": "formaPagamento: PIX | DINHEIRO | CARTAO\nPercentual de comissão do profissional sobre o valor do serviço.\nRequer ROLE_RECEPTION."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📊 Relatórios",
+      "description": "Relatórios gerenciais. Requer ROLE_RECEPTION.\nExpõe nome de clientes — acesso restrito por LGPD.",
+      "item": [
+        {
+          "name": "Agendamentos por período",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/relatorios/agendamentos?inicio=2025-01-01T00:00:00&fim=2025-12-31T23:59:59",
+              "host": ["{{base_url}}"],
+              "path": ["api","relatorios","agendamentos"],
+              "query": [
+                { "key": "inicio", "value": "2025-01-01T00:00:00" },
+                { "key": "fim",    "value": "2025-12-31T23:59:59" }
+              ]
+            },
+            "description": "Retorna agendamentos no período informado (formato ISO DateTime).\nRequer ROLE_RECEPTION."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🩺 Health",
+      "description": "Endpoints de verificação (públicos).",
+      "item": [
+        {
+          "name": "Swagger UI",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/swagger-ui/index.html",
+              "host": ["{{base_url}}"],
+              "path": ["swagger-ui","index.html"]
+            }
+          }
+        },
+        {
+          "name": "OpenAPI Spec (JSON)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/v3/api-docs",
+              "host": ["{{base_url}}"],
+              "path": ["v3","api-docs"]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

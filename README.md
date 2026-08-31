@@ -450,8 +450,8 @@ Pipeline definido em `.gitlab-ci.yml` com três estágios:
 
 A pasta `postman/` contém:
 
-- `collection.json` — coleção **"API Salão de Beleza - Modular"** com requisições para todos os endpoints, incluindo obtenção de token Keycloak (Password Grant), exemplos com `x-api-token` e os novos endpoints LGPD (consentimento, portabilidade, anonimização)
-- `env.json` — ambiente local pré-configurado com variáveis `keycloak_url`, `realm`, `api_url` e `api_token`
+- `collection-local.json` — coleção **"API Salão de Beleza - Modular"** com requisições para todos os endpoints, incluindo obtenção de token Keycloak (Password Grant), exemplos com `x-api-token` e os novos endpoints LGPD (consentimento, portabilidade, anonimização)
+- `env-local.json` — ambiente local pré-configurado com variáveis `keycloak_url`, `realm`, `api_url` e `api_token`
 
 ---
 

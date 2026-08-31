@@ -8,7 +8,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false   # LGPD: desabilitado para evitar log de dados pessoais (PII) em SQL
+    open-in-view: false  # Evita queries JPA durante a serialização HTTP
+    show-sql: false      # LGPD: desabilitado para evitar log de dados pessoais (PII) em SQL
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -26,3 +27,10 @@ spring:
 api:
   token:
     secret: ${API_TOKEN_SECRET:salao-secret-api-token-123}
+logging:
+  pattern:
+    console: '{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","thread":"%t","logger":"%logger{40}","message":"%m","exception":"%ex"}%n'
+  level:
+    com.integra2u: INFO
+    org.springframework: INFO
+    org.hibernate.SQL: DEBUG
