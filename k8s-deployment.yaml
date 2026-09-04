@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: salao-api
   namespace: default
+  labels:
+    app: salao-api
 spec:
   replicas: 1
   selector:
@@ -13,12 +15,30 @@ spec:
       labels:
         app: salao-api
     spec:
+      # Hardening Pod Security Context (Issue 13 — CWE-250)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: salao-api
         image: seu-registry/salao-api:1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
+        # Hardening Container Security Context (Issue 13)
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "prod"
@@ -68,6 +88,9 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

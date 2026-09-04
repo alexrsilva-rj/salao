@@ -31,6 +31,16 @@ spring:
 api:
   token:
     secret: ${API_TOKEN_SECRET}
+
+# Issue 15: Swagger / OpenAPI desabilitado por padrão (SWAGGER_ENABLED=true apenas em dev)
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
+swagger:
+  enabled: ${SWAGGER_ENABLED:false}
 logging:
   pattern:
     console: '{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","thread":"%t","logger":"%logger{40}","message":"%m","exception":"%ex"}%n'
