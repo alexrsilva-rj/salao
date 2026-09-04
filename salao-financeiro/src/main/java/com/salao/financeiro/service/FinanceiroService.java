@@ -3,6 +3,7 @@ package com.salao.financeiro.service;
 import com.salao.agendamento.model.Agendamento;
 import com.salao.agendamento.repository.AgendamentoRepository;
 import com.salao.financeiro.model.Financeiro;
+import com.salao.financeiro.model.FormaPagamentoEnum;
 import com.salao.financeiro.repository.FinanceiroRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class FinanceiroService {
    private final AgendamentoRepository agendamentoRepository;
 
    @Transactional
-   public Financeiro registrarPagamento(UUID agendamentoId, BigDecimal percentualComissao, String formaPagamento) {
+   public Financeiro registrarPagamento(UUID agendamentoId, BigDecimal percentualComissao, FormaPagamentoEnum formaPagamento) {
        Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
 
