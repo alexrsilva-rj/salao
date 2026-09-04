@@ -20,8 +20,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://192.168.18.200:8080/realms/salao-realm}
-          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs}
+          # OBRIGATORIO: injete via variavel de ambiente com URL HTTPS em producao
+          # Exemplo: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://keycloak.exemplo.com/realms/salao-realm
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
 
 # LGPD: Token de API externalizado — sobrescreva API_TOKEN_SECRET em produção
 api:
