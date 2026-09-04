@@ -1,3 +1,5 @@
+/.gradle/
+/.build/
 # Compiled class file
 *.class
 
@@ -23,5 +25,9 @@
 hs_err_pid*
 replay_pid*
 .DS_Store
-.ai/
 .idea/
+.env
+.gradle/
+build/
+bin/
+out/

@@ -3,8 +3,8 @@ spring:
     name: salao-api
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/salao_db}
-    username: ${DB_USER:admin}
-    password: ${DB_PASSWORD:admin}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -20,23 +20,17 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://192.168.18.200:8080/realms/salao-realm}
-          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs}
+          # OBRIGATORIO: injete via variavel de ambiente com URL HTTPS em producao
+          # Exemplo: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://keycloak.exemplo.com/realms/salao-realm
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
 
-# LGPD: Token de API externalizado — sobrescreva API_TOKEN_SECRET em produção
+# Token de API — deve ser injetado via variavel de ambiente API_TOKEN_SECRET (sem default)
+# Em Kubernetes: use secretKeyRef apontando para um Secret com valor criptograficamente seguro
+# Gere com: openssl rand -hex 32
 api:
   token:
-    secret: ${API_TOKEN_SECRET:salao-secret-api-token-123}
-
-# Swagger / OpenAPI - Desabilitado por padrão em produção (injetar SWAGGER_ENABLED=true apenas em dev)
-springdoc:
-  api-docs:
-    enabled: ${SWAGGER_ENABLED:false}
-  swagger-ui:
-    enabled: ${SWAGGER_ENABLED:false}
-
-swagger:
-  enabled: ${SWAGGER_ENABLED:false}
+    secret: ${API_TOKEN_SECRET}
 logging:
   pattern:
     console: '{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","thread":"%t","logger":"%logger{40}","message":"%m","exception":"%ex"}%n'
