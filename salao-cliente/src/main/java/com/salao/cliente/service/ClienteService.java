@@ -1,5 +1,6 @@
 package com.salao.cliente.service;
 
+import com.salao.cliente.dto.ClienteCreateDTO;
 import com.salao.cliente.dto.ClienteUpdateDTO;
 import com.salao.cliente.dto.ConsentimentoDTO;
 import com.salao.cliente.dto.DadosPessoaisDTO;
@@ -8,6 +9,7 @@ import com.salao.cliente.repository.ClienteRepository;
 import com.salao.common.security.UserContext;
 import com.salao.common.audit.Auditavel;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,29 +26,64 @@ public class ClienteService {
     // ── Criação ──────────────────────────────────────────────────
 
     /**
-     * Cria um novo cliente.
-     * O aceite dos termos de uso é obrigatório (Art. 8º LGPD — base legal).
+     * Cria um novo cliente a partir de um DTO de entrada seguro.
+     *
+     * <p>O {@code keycloakUserId} é extraído <strong>exclusivamente</strong> do
+     * {@link UserContext} (token JWT autenticado), nunca do payload da request.
+     * Isso elimina o risco de Mass Assignment (CWE-915) e sequestro de vínculo de
+     * identidade em violação aos Arts. 8º e 9º da LGPD.</p>
+     *
+     * @param dto DTO validado com apenas os campos permitidos para input
+     * @param ctx contexto do usuário autenticado — fonte do keycloakUserId
      */
     @Transactional
-    public Cliente criarCliente(Cliente cliente) {
-        if (!cliente.isConsentimentoTermosAceito()) {
+    public Cliente criarCliente(ClienteCreateDTO dto, UserContext ctx) {
+        if (!Boolean.TRUE.equals(dto.getConsentimentoTermosAceito())) {
             throw new IllegalArgumentException(
                     "O aceite dos Termos de Uso é obrigatório para o cadastro (LGPD Art. 8º).");
         }
-        if (clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
+        if (clienteRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
 
-        // Registra datas de consentimento no momento do aceite
-        cliente.setDataConsentimentoTermos(LocalDateTime.now());
-        if (cliente.isConsentimentoNotificacoes()) {
-            cliente.setDataConsentimentoNotificacoes(LocalDateTime.now());
-        }
-        if (cliente.isConsentimentoMarketing()) {
-            cliente.setDataConsentimentoMarketing(LocalDateTime.now());
-        }
+        LocalDateTime agora = LocalDateTime.now();
+
+        Cliente cliente = Cliente.builder()
+                .nome(dto.getNome())
+                .email(dto.getEmail())
+                .telefone(dto.getTelefone())
+                // keycloakUserId SEMPRE vem do token JWT, nunca do payload da request
+                .keycloakUserId(ctx.getKeycloakUserId())
+                .consentimentoTermosAceito(true)
+                .dataConsentimentoTermos(agora)
+                .consentimentoNotificacoes(dto.isConsentimentoNotificacoes())
+                .dataConsentimentoNotificacoes(dto.isConsentimentoNotificacoes() ? agora : null)
+                .consentimentoMarketing(dto.isConsentimentoMarketing())
+                .dataConsentimentoMarketing(dto.isConsentimentoMarketing() ? agora : null)
+                .build();
 
         return clienteRepository.save(cliente);
+    }
+
+    // ── Validação de Ownership (IDOR) ────────────────────────────
+
+    /**
+     * Valida que o usuário autenticado tem permissão para acessar o cliente indicado.
+     *
+     * <p>Usuários com {@code ROLE_CUSTOMER} só podem acessar o próprio registro.
+     * Usuários com {@code ROLE_RECEPTION} ou {@code ROLE_PROFESSIONAL} podem
+     * acessar qualquer registro.</p>
+     *
+     * @param cliente entidade a ser verificada
+     * @param ctx contexto do usuário autenticado
+     * @throws AccessDeniedException se o cliente CUSTOMER tentar acessar registro de terceiro
+     */
+    public void validarOwnership(Cliente cliente, UserContext ctx) {
+        if (ctx.isCustomer() &&
+                !ctx.getKeycloakUserId().equals(cliente.getKeycloakUserId())) {
+            throw new AccessDeniedException(
+                    "Acesso negado: você não tem permissão para acessar dados de outro cliente.");
+        }
     }
 
     // ── Consultas ────────────────────────────────────────────────
