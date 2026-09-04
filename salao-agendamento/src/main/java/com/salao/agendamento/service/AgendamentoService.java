@@ -8,6 +8,8 @@ import com.salao.agendamento.repository.ProfissionalRepository;
 import com.salao.agendamento.repository.ServicoRepository;
 import com.salao.cliente.model.Cliente;
 import com.salao.cliente.service.ClienteService;
+import com.salao.common.exception.EntidadeNaoEncontradaException;
+import com.salao.common.exception.RegraNegocioException;
 import com.salao.common.security.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -64,16 +66,16 @@ public class AgendamentoService {
 
         Cliente cliente = clienteService.buscarPorId(clienteId);
         Profissional profissional = profissionalRepository.findById(profissionalId)
-                .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Profissional não encontrado."));
         Servico servico = servicoRepository.findById(servicoId)
-                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Serviço não encontrado."));
 
         LocalDateTime dataHoraFim = dataHoraInicio.plusMinutes(servico.getDuracaoMinutos());
 
         List<Agendamento> conflitos = agendamentoRepository.findConflitantes(
                 profissionalId, dataHoraInicio, dataHoraFim);
         if (!conflitos.isEmpty()) {
-            throw new IllegalStateException(
+            throw new RegraNegocioException(
                     "O profissional já possui um agendamento conflitante neste horário.");
         }
 

@@ -6,6 +6,8 @@ import com.salao.cliente.dto.ConsentimentoDTO;
 import com.salao.cliente.dto.DadosPessoaisDTO;
 import com.salao.cliente.model.Cliente;
 import com.salao.cliente.repository.ClienteRepository;
+import com.salao.common.exception.EntidadeNaoEncontradaException;
+import com.salao.common.exception.RegraNegocioException;
 import com.salao.common.security.UserContext;
 import com.salao.common.audit.Auditavel;
 import lombok.RequiredArgsConstructor;
@@ -39,11 +41,11 @@ public class ClienteService {
     @Transactional
     public Cliente criarCliente(ClienteCreateDTO dto, UserContext ctx) {
         if (!Boolean.TRUE.equals(dto.getConsentimentoTermosAceito())) {
-            throw new IllegalArgumentException(
+            throw new RegraNegocioException(
                     "O aceite dos Termos de Uso é obrigatório para o cadastro (LGPD Art. 8º).");
         }
         if (clienteRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("E-mail já cadastrado.");
+            throw new RegraNegocioException("E-mail já cadastrado.");
         }
 
         LocalDateTime agora = LocalDateTime.now();
@@ -108,13 +110,13 @@ public class ClienteService {
     @Auditavel(acao = "BUSCAR_CLIENTE", entidade = "Cliente")
     public Cliente buscarPorId(UUID id) {
         return clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado."));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente não encontrado."));
     }
 
     @Transactional(readOnly = true)
     public Cliente buscarPorKeycloakId(String keycloakUserId) {
         return clienteRepository.findByKeycloakUserId(keycloakUserId)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado para este usuário."));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente não encontrado para este usuário."));
     }
 
     // ── Retificação (Art. 18, IV LGPD) ──────────────────────────
@@ -124,7 +126,7 @@ public class ClienteService {
     public Cliente atualizarCliente(UUID id, ClienteUpdateDTO dto) {
         Cliente cliente = buscarPorId(id);
         if (cliente.isAnonimizado()) {
-            throw new IllegalStateException("Não é possível atualizar um cliente anonimizado.");
+            throw new RegraNegocioException("Não é possível atualizar um cliente anonimizado.");
         }
         if (dto.getNome() != null && !dto.getNome().isBlank()) {
             cliente.setNome(dto.getNome());
@@ -155,7 +157,7 @@ public class ClienteService {
     public ConsentimentoDTO atualizarConsentimento(UUID id, ConsentimentoDTO dto) {
         Cliente cliente = buscarPorId(id);
         if (cliente.isAnonimizado()) {
-            throw new IllegalStateException("Não é possível alterar consentimento de cliente anonimizado.");
+            throw new RegraNegocioException("Não é possível alterar consentimento de cliente anonimizado.");
         }
 
         // Notificações

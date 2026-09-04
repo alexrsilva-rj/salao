@@ -2,6 +2,7 @@ package com.salao.financeiro.service;
 
 import com.salao.agendamento.model.Agendamento;
 import com.salao.agendamento.repository.AgendamentoRepository;
+import com.salao.common.exception.EntidadeNaoEncontradaException;
 import com.salao.financeiro.model.Financeiro;
 import com.salao.financeiro.model.FormaPagamentoEnum;
 import com.salao.financeiro.repository.FinanceiroRepository;
@@ -42,7 +43,7 @@ public class FinanceiroService {
                                         FormaPagamentoEnum formaPagamento) {
 
        Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
-               .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
+               .orElseThrow(() -> new EntidadeNaoEncontradaException("Agendamento não encontrado."));
 
        // Issue 18 / V3: impede pagamentos duplicados para o mesmo agendamento
        if (financeiroRepository.existsByAgendamentoId(agendamentoId)) {
