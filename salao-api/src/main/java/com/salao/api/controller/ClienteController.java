@@ -8,6 +8,7 @@ import com.salao.security.claims.JwtClaimsExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,12 +29,20 @@ public class ClienteController {
 
     // ── CRUD ─────────────────────────────────────────────────────
 
+    /**
+     * Cria um novo cliente.
+     *
+     * <p>Usa {@link ClienteCreateDTO} em vez da entidade JPA para evitar Mass Assignment
+     * (Issue 16 / V1 — CWE-915). O {@code keycloakUserId} é extraído exclusivamente
+     * do token JWT autenticado, não do payload da request.</p>
+     */
     @PostMapping
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Cadastrar novo cliente",
                description = "O campo consentimentoTermosAceito deve ser true (LGPD Art. 8º).")
-    public ResponseEntity<ClienteResponseDTO> criar(@RequestBody Cliente cliente) {
-        return ResponseEntity.ok(ClienteResponseDTO.from(clienteService.criarCliente(cliente)));
+    public ResponseEntity<ClienteResponseDTO> criar(@Valid @RequestBody ClienteCreateDTO dto) {
+        UserContext ctx = jwtClaimsExtractor.extract();
+        return ResponseEntity.ok(ClienteResponseDTO.from(clienteService.criarCliente(dto, ctx)));
     }
 
     @GetMapping
@@ -49,19 +58,32 @@ public class ClienteController {
         );
     }
 
+    /**
+     * Busca cliente por ID com verificação de ownership (Issue 04 — IDOR CWE-639).
+     * CUSTOMER só pode acessar o próprio registro; RECEPTION pode acessar qualquer um.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Buscar cliente por ID")
     public ResponseEntity<ClienteResponseDTO> buscarPorId(@PathVariable UUID id) {
-        return ResponseEntity.ok(ClienteResponseDTO.from(clienteService.buscarPorId(id)));
+        UserContext ctx = jwtClaimsExtractor.extract();
+        Cliente cliente = clienteService.buscarPorId(id);
+        clienteService.validarOwnership(cliente, ctx);
+        return ResponseEntity.ok(ClienteResponseDTO.from(cliente));
     }
 
+    /**
+     * Atualiza dados do cliente com verificação de ownership (Issue 04 — IDOR).
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Atualizar dados do cliente (Art. 18, IV LGPD — Retificação)",
                description = "Apenas nome e telefone podem ser atualizados.")
     public ResponseEntity<ClienteResponseDTO> atualizar(@PathVariable UUID id,
-                                                         @RequestBody ClienteUpdateDTO dto) {
+                                                         @Valid @RequestBody ClienteUpdateDTO dto) {
+        UserContext ctx = jwtClaimsExtractor.extract();
+        Cliente cliente = clienteService.buscarPorId(id);
+        clienteService.validarOwnership(cliente, ctx);
         return ResponseEntity.ok(ClienteResponseDTO.from(clienteService.atualizarCliente(id, dto)));
     }
 
@@ -76,29 +98,47 @@ public class ClienteController {
 
     // ── Consentimento (Art. 8º LGPD) ─────────────────────────────
 
+    /**
+     * Consulta consentimentos com verificação de ownership (Issue 04 — IDOR).
+     */
     @GetMapping("/{id}/consentimento")
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Consultar consentimentos do cliente")
     public ResponseEntity<ConsentimentoDTO> buscarConsentimento(@PathVariable UUID id) {
+        UserContext ctx = jwtClaimsExtractor.extract();
+        Cliente cliente = clienteService.buscarPorId(id);
+        clienteService.validarOwnership(cliente, ctx);
         return ResponseEntity.ok(clienteService.buscarConsentimento(id));
     }
 
+    /**
+     * Atualiza consentimentos com verificação de ownership (Issue 04 — IDOR).
+     */
     @PutMapping("/{id}/consentimento")
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Atualizar consentimentos do cliente",
                description = "Permite opt-in/opt-out de notificações e marketing de forma independente.")
     public ResponseEntity<ConsentimentoDTO> atualizarConsentimento(@PathVariable UUID id,
                                                                      @RequestBody ConsentimentoDTO dto) {
+        UserContext ctx = jwtClaimsExtractor.extract();
+        Cliente cliente = clienteService.buscarPorId(id);
+        clienteService.validarOwnership(cliente, ctx);
         return ResponseEntity.ok(clienteService.atualizarConsentimento(id, dto));
     }
 
     // ── Portabilidade de Dados (Art. 18, V LGPD) ─────────────────
 
+    /**
+     * Exporta dados pessoais com verificação de ownership (Issue 04 — IDOR).
+     */
     @GetMapping("/{id}/dados-pessoais")
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Exportar todos os dados pessoais do cliente (Art. 18, V LGPD — Portabilidade)",
                description = "Retorna todos os dados do titular em formato JSON exportável.")
     public ResponseEntity<DadosPessoaisDTO> exportarDadosPessoais(@PathVariable UUID id) {
+        UserContext ctx = jwtClaimsExtractor.extract();
+        Cliente cliente = clienteService.buscarPorId(id);
+        clienteService.validarOwnership(cliente, ctx);
         return ResponseEntity.ok(clienteService.exportarDadosPessoais(id));
     }
 }
