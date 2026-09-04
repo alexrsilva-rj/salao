@@ -2,6 +2,7 @@ package com.salao.financeiro.model;
 
 import com.salao.agendamento.model.Agendamento;
 import com.salao.agendamento.model.Profissional;
+import com.salao.financeiro.model.FormaPagamentoEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -41,8 +42,9 @@ public class Financeiro {
    @Column(nullable = false)
    private BigDecimal valorLiquidoSalao;
 
+   @Enumerated(EnumType.STRING)
    @Column(nullable = false)
-   private String formaPagamento; // PIX, DINHEIRO, CARTAO
+   private FormaPagamentoEnum formaPagamento;
 
    @Column(nullable = false)
    private String status; // PAGO, PENDENTE
