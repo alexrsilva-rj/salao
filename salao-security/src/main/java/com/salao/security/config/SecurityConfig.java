@@ -28,6 +28,9 @@ public class SecurityConfig {
     @Value("${api.token.secret:salao-secret-api-token-123}")
     private String apiTokenSecret;
 
+    @Value("${swagger.enabled:false}")
+    private boolean swaggerEnabled;
+
     @Bean
     public ApiTokenAuthenticationFilter apiTokenAuthenticationFilter() {
         return new ApiTokenAuthenticationFilter(apiTokenSecret);
@@ -39,19 +42,24 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(apiTokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Relatórios e financeiro: somente RECEPTION
-                .requestMatchers("/api/relatorios/**").hasRole("RECEPTION")
-                .requestMatchers("/api/financeiro/**").hasRole("RECEPTION")
-                // Catálogo: qualquer autenticado
-                .requestMatchers(HttpMethod.GET, "/api/catalogo/**").authenticated()
-                // Clientes: RECEPTION e CUSTOMER (isolamento feito na camada de serviço)
-                .requestMatchers("/api/clientes/**").hasAnyRole("RECEPTION", "CUSTOMER")
-                // Agendamentos: todos os perfis autenticados
-                .requestMatchers("/api/agendamentos/**").hasAnyRole("RECEPTION", "PROFESSIONAL", "CUSTOMER")
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> {
+                if (swaggerEnabled) {
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll();
+                } else {
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").hasRole("RECEPTION");
+                }
+                auth
+                    // Relatórios e financeiro: somente RECEPTION
+                    .requestMatchers("/api/relatorios/**").hasRole("RECEPTION")
+                    .requestMatchers("/api/financeiro/**").hasRole("RECEPTION")
+                    // Catálogo: qualquer autenticado
+                    .requestMatchers(HttpMethod.GET, "/api/catalogo/**").authenticated()
+                    // Clientes: RECEPTION e CUSTOMER (isolamento feito na camada de serviço)
+                    .requestMatchers("/api/clientes/**").hasAnyRole("RECEPTION", "CUSTOMER")
+                    // Agendamentos: todos os perfis autenticados
+                    .requestMatchers("/api/agendamentos/**").hasAnyRole("RECEPTION", "PROFESSIONAL", "CUSTOMER")
+                    .anyRequest().authenticated();
+            })
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
             );
