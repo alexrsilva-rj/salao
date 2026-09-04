@@ -10,6 +10,7 @@ import com.salao.cliente.model.Cliente;
 import com.salao.cliente.service.ClienteService;
 import com.salao.common.security.UserContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +27,35 @@ public class AgendamentoService {
     private final ServicoRepository servicoRepository;
     private final ClienteService clienteService;
 
+    /**
+     * Cria um novo agendamento com validação de ownership para clientes (Issue 11 — CWE-639).
+     *
+     * <p><strong>Regras de segurança:</strong>
+     * <ul>
+     *   <li>{@code ROLE_CUSTOMER}: o {@code clienteId} é derivado do token JWT via
+     *       {@code keycloakUserId} — o valor enviado na request é ignorado para evitar
+     *       que um cliente crie agendamentos em nome de outro.</li>
+     *   <li>{@code ROLE_RECEPTION}: pode especificar qualquer {@code clienteId}.</li>
+     *   <li>{@code ROLE_PROFESSIONAL}: pode especificar qualquer {@code clienteId}.</li>
+     * </ul></p>
+     *
+     * @param clienteIdRequest  ID do cliente enviado na request (ignorado se role=CUSTOMER)
+     * @param profissionalId    ID do profissional
+     * @param servicoId         ID do serviço
+     * @param dataHoraInicio    Data/hora de início do agendamento
+     * @param userContext       Contexto do usuário autenticado
+     * @throws AccessDeniedException se CUSTOMER tentar criar agendamento para outro cliente
+     */
     @Transactional
-    public Agendamento criarAgendamento(UUID clienteId, UUID profissionalId,
-                                        UUID servicoId, LocalDateTime dataHoraInicio) {
+    public Agendamento criarAgendamento(UUID clienteIdRequest,
+                                        UUID profissionalId,
+                                        UUID servicoId,
+                                        LocalDateTime dataHoraInicio,
+                                        UserContext userContext) {
+
+        // Issue 11: se o usuário for CUSTOMER, deriva o clienteId do token
+        UUID clienteId = resolverClienteId(clienteIdRequest, userContext);
+
         Cliente cliente = clienteService.buscarPorId(clienteId);
         Profissional profissional = profissionalRepository.findById(profissionalId)
                 .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
@@ -59,6 +86,27 @@ public class AgendamentoService {
         clienteService.registrarAtividade(clienteId);
 
         return salvo;
+    }
+
+    /**
+     * Resolve o clienteId efetivo com base na role do usuário.
+     *
+     * <ul>
+     *   <li>CUSTOMER: ignora o ID da request e busca pelo keycloakUserId do token</li>
+     *   <li>RECEPTION/PROFESSIONAL: usa o ID enviado na request (pode agir por terceiros)</li>
+     * </ul>
+     */
+    private UUID resolverClienteId(UUID clienteIdRequest, UserContext userContext) {
+        if (userContext.isCustomer()) {
+            // Busca o registro do cliente pelo keycloakUserId do token — NUNCA usa o ID da request
+            Cliente clienteAutenticado = clienteService.buscarPorKeycloakId(userContext.getKeycloakUserId());
+            return clienteAutenticado.getId();
+        }
+        // RECEPTION e PROFESSIONAL podem criar agendamentos para qualquer cliente
+        if (clienteIdRequest == null) {
+            throw new IllegalArgumentException("O clienteId é obrigatório para este perfil.");
+        }
+        return clienteIdRequest;
     }
 
     /**
