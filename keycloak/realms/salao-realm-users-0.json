@@ -11,12 +11,19 @@
       "createdTimestamp": 1786378687084,
       "enabled": true,
       "totp": false,
-      "credentials": [],
+      "credentials": [
+        {
+          "id": "c19a0188-f192-43de-abab-b86556313dbc",
+          "type": "password",
+          "createdDate": 1786378687275,
+          "secretData": "{\"value\":\"fDH80NLu6ce+UMjZQkUx1I+2mD+sJxD4/2LQktxqCbnvadKYT9Ir4fP0ZrK8a5TS8zUAp44JeyymqQ5nXnTNbQ==\",\"salt\":\"l7AxIAr3aKsZmb/EASr0wg==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
+        }
+      ],
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "ADMIN",
-        "GERENTE",
+        "RECEPTION",
         "default-roles-salao-realm"
       ],
       "notBefore": 0,
@@ -71,11 +78,19 @@
       "createdTimestamp": 1786378687373,
       "enabled": true,
       "totp": false,
-      "credentials": [],
+      "credentials": [
+        {
+          "id": "4a9e4206-57c8-41fd-b017-66471712821e",
+          "type": "password",
+          "createdDate": 1786378687558,
+          "secretData": "{\"value\":\"7SZV2lpko+o7Hdjk5mGccIVPfzivF2WPo41ibxRewCw2xuA/rqpCt3lp1a4eonz7vdZ6KQfl5AHjrBGL+HNgfg==\",\"salt\":\"wH8lTiubu5zF3iX7aTErng==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
+        }
+      ],
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "CLIENTE",
+        "CUSTOMER",
         "default-roles-salao-realm"
       ],
       "notBefore": 0,

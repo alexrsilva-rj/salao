@@ -49,8 +49,8 @@
     "realm": [
       {
         "id": "a969e746-f624-425f-9a88-5fe365465e46",
-        "name": "CLIENTE",
-        "description": "Agenda serviços e visualiza histórico",
+        "name": "CUSTOMER",
+        "description": "Mapeado de 'CLIENTE' para 'CUSTOMER' (alinhamento Spring Security)",
         "composite": false,
         "clientRole": false,
         "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
@@ -58,8 +58,8 @@
       },
       {
         "id": "be993fd5-a63d-4b07-9a9f-1f0e5bfc2476",
-        "name": "PROFISSIONAL",
-        "description": "Visualiza própria agenda e lançamentos",
+        "name": "PROFESSIONAL",
+        "description": "Mapeado de 'PROFISSIONAL' para 'PROFESSIONAL' (alinhamento Spring Security)",
         "composite": false,
         "clientRole": false,
         "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
@@ -76,17 +76,8 @@
       },
       {
         "id": "73431e97-77cc-489b-a90b-a215a7f255d5",
-        "name": "ADMIN",
-        "description": "Acesso total ao sistema",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
-        "attributes": {}
-      },
-      {
-        "id": "b3746240-4064-497b-8c31-92650b0d7eec",
-        "name": "GERENTE",
-        "description": "Gerencia profissionais, serviços e finanças",
+        "name": "RECEPTION",
+        "description": "Mapeado de 'ADMIN' para 'RECEPTION' (alinhamento Spring Security)",
         "composite": false,
         "clientRole": false,
         "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
@@ -2547,12 +2538,19 @@
       "createdTimestamp": 1786378687084,
       "enabled": true,
       "totp": false,
-      "credentials": [],
+      "credentials": [
+        {
+          "id": "c19a0188-f192-43de-abab-b86556313dbc",
+          "type": "password",
+          "createdDate": 1786378687275,
+          "secretData": "{\"value\":\"fDH80NLu6ce+UMjZQkUx1I+2mD+sJxD4/2LQktxqCbnvadKYT9Ir4fP0ZrK8a5TS8zUAp44JeyymqQ5nXnTNbQ==\",\"salt\":\"l7AxIAr3aKsZmb/EASr0wg==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
+        }
+      ],
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "ADMIN",
-        "GERENTE",
+        "RECEPTION",
         "default-roles-salao-realm"
       ],
       "notBefore": 0,
@@ -2607,11 +2605,19 @@
       "createdTimestamp": 1786378687373,
       "enabled": true,
       "totp": false,
-      "credentials": [],
+      "credentials": [
+        {
+          "id": "4a9e4206-57c8-41fd-b017-66471712821e",
+          "type": "password",
+          "createdDate": 1786378687558,
+          "secretData": "{\"value\":\"7SZV2lpko+o7Hdjk5mGccIVPfzivF2WPo41ibxRewCw2xuA/rqpCt3lp1a4eonz7vdZ6KQfl5AHjrBGL+HNgfg==\",\"salt\":\"wH8lTiubu5zF3iX7aTErng==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
+        }
+      ],
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "CLIENTE",
+        "CUSTOMER",
         "default-roles-salao-realm"
       ],
       "notBefore": 0,
