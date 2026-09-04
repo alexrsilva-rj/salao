@@ -25,7 +25,7 @@ import java.util.Map;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-    @Value("${api.token.secret:salao-secret-api-token-123}")
+    @Value("${api.token.secret}")
     private String apiTokenSecret;
 
     @Bean
