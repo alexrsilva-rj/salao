@@ -37,4 +37,4 @@ logging:
   level:
     com.integra2u: INFO
     org.springframework: INFO
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: INFO
