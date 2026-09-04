@@ -56,6 +56,12 @@ public class AgendamentoService {
         // Issue 11: se o usuário for CUSTOMER, deriva o clienteId do token
         UUID clienteId = resolverClienteId(clienteIdRequest, userContext);
 
+        // Issue 19 / V4: valida que o agendamento é para um horário futuro
+        if (!dataHoraInicio.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException(
+                    "A data/hora de início do agendamento deve ser futura.");
+        }
+
         Cliente cliente = clienteService.buscarPorId(clienteId);
         Profissional profissional = profissionalRepository.findById(profissionalId)
                 .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
