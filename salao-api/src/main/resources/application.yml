@@ -23,10 +23,12 @@ spring:
           issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://192.168.18.200:8080/realms/salao-realm}
           jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://192.168.18.200:8080/realms/salao-realm/protocol/openid-connect/certs}
 
-# LGPD: Token de API externalizado — sobrescreva API_TOKEN_SECRET em produção
+# Token de API — deve ser injetado via variavel de ambiente API_TOKEN_SECRET (sem default)
+# Em Kubernetes: use secretKeyRef apontando para um Secret com valor criptograficamente seguro
+# Gere com: openssl rand -hex 32
 api:
   token:
-    secret: ${API_TOKEN_SECRET:salao-secret-api-token-123}
+    secret: ${API_TOKEN_SECRET}
 logging:
   pattern:
     console: '{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","thread":"%t","logger":"%logger{40}","message":"%m","exception":"%ex"}%n'
