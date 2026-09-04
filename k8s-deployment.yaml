@@ -1,41 +1,103 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
- name: salao-api
- namespace: default
+  name: salao-api
+  namespace: default
+  labels:
+    app: salao-api
 spec:
- replicas: 1
- selector:
-   matchLabels:
-     app: salao-api
- template:
-   metadata:
-     labels:
-       app: salao-api
-   spec:
-     containers:
-     - name: salao-api
-       image: seu-registry/salao-api:1.0.0
-       imagePullPolicy: IfNotPresent
-       ports:
-       - containerPort: 8080
-       env:
-       - name: SPRING_PROFILES_ACTIVE
-         value: "prod"
-       - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
-         value: "http://192.168.18.200:8080/realms/salao-realm"
-       - name: SPRING_DATASOURCE_URL
-         value: "jdbc:postgresql://postgres-service:5432/salao_db"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: salao-api
+  template:
+    metadata:
+      labels:
+        app: salao-api
+    spec:
+      # Hardening Pod Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+      - name: salao-api
+        image: seu-registry/salao-api:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        # Hardening Container Security Context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+          value: "https://keycloak.example.com/realms/salao-realm"
+        - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+          value: "https://keycloak.example.com/realms/salao-realm/protocol/openid-connect/certs"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/salao_db"
+        # Credenciais movidas para Kubernetes Secrets
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: salao-db-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: salao-db-secret
+              key: password
+        - name: API_TOKEN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: salao-api-secret
+              key: api-token-secret
+        # Probes de integridade (Spring Boot Actuator)
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        # Limites e reservas de recursos
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
- name: salao-api-service
+  name: salao-api-service
 spec:
- type: ClusterIP
- selector:
-   app: salao-api
- ports:
-   - protocol: TCP
-     port: 80
-     targetPort: 8080
+  type: ClusterIP
+  selector:
+    app: salao-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
