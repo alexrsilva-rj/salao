@@ -1,79 +1,100 @@
 {
-  "realm" : "salao-realm",
-  "users" : [ {
-    "id" : "ccd3aae2-09e9-4566-964a-fc4abad1219b",
-    "username" : "admin",
-    "firstName" : "Administrador",
-    "lastName" : "Sistema",
-    "email" : "admin@salao.com",
-    "emailVerified" : true,
-    "createdTimestamp" : 1786378687084,
-    "enabled" : true,
-    "totp" : false,
-    "credentials" : [ {
-      "id" : "c19a0188-f192-43de-abab-b86556313dbc",
-      "type" : "password",
-      "createdDate" : 1786378687275,
-      "secretData" : "{\"value\":\"fDH80NLu6ce+UMjZQkUx1I+2mD+sJxD4/2LQktxqCbnvadKYT9Ir4fP0ZrK8a5TS8zUAp44JeyymqQ5nXnTNbQ==\",\"salt\":\"l7AxIAr3aKsZmb/EASr0wg==\",\"additionalParameters\":{}}",
-      "credentialData" : "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
-    } ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "ADMIN", "GERENTE", "default-roles-salao-realm" ],
-    "notBefore" : 0,
-    "groups" : [ ]
-  }, {
-    "id" : "79639f94-1f95-4bda-b6a6-9dd0329ec4a8",
-    "username" : "service-account-salao-backend",
-    "emailVerified" : false,
-    "createdTimestamp" : 1786575820424,
-    "enabled" : true,
-    "totp" : false,
-    "serviceAccountClientId" : "salao-backend",
-    "credentials" : [ ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-salao-realm" ],
-    "clientRoles" : {
-      "salao-backend" : [ "uma_protection" ]
+  "realm": "salao-realm",
+  "users": [
+    {
+      "id": "ccd3aae2-09e9-4566-964a-fc4abad1219b",
+      "username": "admin",
+      "firstName": "Administrador",
+      "lastName": "Sistema",
+      "email": "admin@salao.com",
+      "emailVerified": true,
+      "createdTimestamp": 1786378687084,
+      "enabled": true,
+      "totp": false,
+      "credentials": [
+        {
+          "id": "c19a0188-f192-43de-abab-b86556313dbc",
+          "type": "password",
+          "createdDate": 1786378687275,
+          "secretData": "{\"value\":\"fDH80NLu6ce+UMjZQkUx1I+2mD+sJxD4/2LQktxqCbnvadKYT9Ir4fP0ZrK8a5TS8zUAp44JeyymqQ5nXnTNbQ==\",\"salt\":\"l7AxIAr3aKsZmb/EASr0wg==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "RECEPTION",
+        "default-roles-salao-realm"
+      ],
+      "notBefore": 0,
+      "groups": []
     },
-    "notBefore" : 0,
-    "groups" : [ ]
-  }, {
-    "id" : "4b4eec2b-2d38-4d3c-92a0-1701d95b7b3c",
-    "username" : "service-account-spring-api",
-    "emailVerified" : false,
-    "createdTimestamp" : 1785612496375,
-    "enabled" : true,
-    "totp" : false,
-    "serviceAccountClientId" : "spring-api",
-    "credentials" : [ ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-salao-realm" ],
-    "notBefore" : 0,
-    "groups" : [ ]
-  }, {
-    "id" : "dcfc95dc-974a-4821-875e-599e90cd9919",
-    "username" : "testuser",
-    "firstName" : "Test",
-    "lastName" : "User",
-    "email" : "test@example.com",
-    "emailVerified" : true,
-    "createdTimestamp" : 1786378687373,
-    "enabled" : true,
-    "totp" : false,
-    "credentials" : [ {
-      "id" : "4a9e4206-57c8-41fd-b017-66471712821e",
-      "type" : "password",
-      "createdDate" : 1786378687558,
-      "secretData" : "{\"value\":\"7SZV2lpko+o7Hdjk5mGccIVPfzivF2WPo41ibxRewCw2xuA/rqpCt3lp1a4eonz7vdZ6KQfl5AHjrBGL+HNgfg==\",\"salt\":\"wH8lTiubu5zF3iX7aTErng==\",\"additionalParameters\":{}}",
-      "credentialData" : "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
-    } ],
-    "disableableCredentialTypes" : [ ],
-    "requiredActions" : [ ],
-    "realmRoles" : [ "CLIENTE", "default-roles-salao-realm" ],
-    "notBefore" : 0,
-    "groups" : [ ]
-  } ]
+    {
+      "id": "79639f94-1f95-4bda-b6a6-9dd0329ec4a8",
+      "username": "service-account-salao-backend",
+      "emailVerified": false,
+      "createdTimestamp": 1786575820424,
+      "enabled": true,
+      "totp": false,
+      "serviceAccountClientId": "salao-backend",
+      "credentials": [],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-salao-realm"
+      ],
+      "clientRoles": {
+        "salao-backend": [
+          "uma_protection"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "4b4eec2b-2d38-4d3c-92a0-1701d95b7b3c",
+      "username": "service-account-spring-api",
+      "emailVerified": false,
+      "createdTimestamp": 1785612496375,
+      "enabled": true,
+      "totp": false,
+      "serviceAccountClientId": "spring-api",
+      "credentials": [],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-salao-realm"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "dcfc95dc-974a-4821-875e-599e90cd9919",
+      "username": "testuser",
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "test@example.com",
+      "emailVerified": true,
+      "createdTimestamp": 1786378687373,
+      "enabled": true,
+      "totp": false,
+      "credentials": [
+        {
+          "id": "4a9e4206-57c8-41fd-b017-66471712821e",
+          "type": "password",
+          "createdDate": 1786378687558,
+          "secretData": "{\"value\":\"7SZV2lpko+o7Hdjk5mGccIVPfzivF2WPo41ibxRewCw2xuA/rqpCt3lp1a4eonz7vdZ6KQfl5AHjrBGL+HNgfg==\",\"salt\":\"wH8lTiubu5zF3iX7aTErng==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":210000,\"algorithm\":\"pbkdf2-sha512\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "CUSTOMER",
+        "default-roles-salao-realm"
+      ],
+      "notBefore": 0,
+      "groups": []
+    }
+  ]
 }

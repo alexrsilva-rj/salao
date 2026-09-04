@@ -7,16 +7,16 @@ services:
     image: postgres:16-alpine
     container_name: salao-postgres
     environment:
-      POSTGRES_DB: salao_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d salao_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,19 +26,20 @@ services:
   # ──────────────────────────────────────────
   # Keycloak (OAuth2 / JWT issuer)
   # Porta local: 8180 -> container: 8080
-  # Admin UI: http://localhost:8180  (admin / admin)
+  # Admin UI: http://localhost:8180
+  # Credenciais: configuradas via .env (nunca commitar)
   # ──────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
     container_name: salao-keycloak
-    command: start-dev --import-realm --features=scripts
+    command: start-dev --import-realm
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
-      KC_DB_USERNAME: admin
-      KC_DB_PASSWORD: admin
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     ports:
@@ -69,8 +70,9 @@ services:
     container_name: salao-api
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/salao_db
-      DB_USER: admin
-      DB_PASSWORD: admin
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      API_TOKEN_SECRET: ${API_TOKEN_SECRET}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8180/realms/salao-realm
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8180/realms/salao-realm/protocol/openid-connect/certs
       SPRING_PROFILES_ACTIVE: local
