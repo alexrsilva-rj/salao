@@ -45,6 +45,6 @@ logging:
   pattern:
     console: '{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","thread":"%t","logger":"%logger{40}","message":"%m","exception":"%ex"}%n'
   level:
-    com.integra2u: INFO
+    com.salao: INFO
     org.springframework: INFO
     org.hibernate.SQL: INFO

@@ -49,8 +49,8 @@
     "realm": [
       {
         "id": "a969e746-f624-425f-9a88-5fe365465e46",
-        "name": "CLIENTE",
-        "description": "Agenda serviços e visualiza histórico",
+        "name": "CUSTOMER",
+        "description": "Role mapeada para CUSTOMER (Spring Security)",
         "composite": false,
         "clientRole": false,
         "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
@@ -58,8 +58,8 @@
       },
       {
         "id": "be993fd5-a63d-4b07-9a9f-1f0e5bfc2476",
-        "name": "PROFISSIONAL",
-        "description": "Visualiza própria agenda e lançamentos",
+        "name": "PROFESSIONAL",
+        "description": "Role mapeada para PROFESSIONAL (Spring Security)",
         "composite": false,
         "clientRole": false,
         "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
@@ -76,17 +76,8 @@
       },
       {
         "id": "73431e97-77cc-489b-a90b-a215a7f255d5",
-        "name": "ADMIN",
-        "description": "Acesso total ao sistema",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
-        "attributes": {}
-      },
-      {
-        "id": "b3746240-4064-497b-8c31-92650b0d7eec",
-        "name": "GERENTE",
-        "description": "Gerencia profissionais, serviços e finanças",
+        "name": "RECEPTION",
+        "description": "Role mapeada para RECEPTION (Spring Security)",
         "composite": false,
         "clientRole": false,
         "containerId": "27418617-d696-4c4f-9471-297cfc4b4737",
@@ -2559,8 +2550,7 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "ADMIN",
-        "GERENTE",
+        "RECEPTION",
         "default-roles-salao-realm"
       ],
       "notBefore": 0,
@@ -2627,7 +2617,7 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "CLIENTE",
+        "CUSTOMER",
         "default-roles-salao-realm"
       ],
       "notBefore": 0,

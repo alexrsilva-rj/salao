@@ -3,6 +3,7 @@ package com.salao.financeiro.service;
 import com.salao.agendamento.model.Agendamento;
 import com.salao.agendamento.repository.AgendamentoRepository;
 import com.salao.common.exception.EntidadeNaoEncontradaException;
+import com.salao.common.exception.PagamentoDuplicadoException;
 import com.salao.financeiro.model.Financeiro;
 import com.salao.financeiro.model.FormaPagamentoEnum;
 import com.salao.financeiro.repository.FinanceiroRepository;
@@ -35,7 +36,7 @@ public class FinanceiroService {
     * @param agendamentoId      ID do agendamento a ser pago
     * @param percentualComissao percentual entre 0.00 e 100.00 (validado no controller)
     * @param formaPagamento     forma de pagamento tipada
-    * @throws IllegalStateException se o agendamento já tiver pagamento registrado
+    * @throws PagamentoDuplicadoException se o agendamento já tiver pagamento registrado
     */
    @Transactional
    public Financeiro registrarPagamento(UUID agendamentoId,
@@ -45,9 +46,9 @@ public class FinanceiroService {
        Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
                .orElseThrow(() -> new EntidadeNaoEncontradaException("Agendamento não encontrado."));
 
-       // Issue 18 / V3: impede pagamentos duplicados para o mesmo agendamento
+       // Issue 18 / V3: impede pagamentos duplicados para o mesmo agendamento (HTTP 409 Conflict)
        if (financeiroRepository.existsByAgendamentoId(agendamentoId)) {
-           throw new IllegalStateException(
+           throw new PagamentoDuplicadoException(
                    "Este agendamento já possui um pagamento registrado. " +
                    "Não é permitido registrar pagamento duplicado.");
        }

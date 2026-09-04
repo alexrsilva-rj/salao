@@ -60,7 +60,7 @@ public class AgendamentoService {
 
         // Issue 19 / V4: valida que o agendamento é para um horário futuro
         if (!dataHoraInicio.isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException(
+            throw new RegraNegocioException(
                     "A data/hora de início do agendamento deve ser futura.");
         }
 
@@ -112,7 +112,7 @@ public class AgendamentoService {
         }
         // RECEPTION e PROFESSIONAL podem criar agendamentos para qualquer cliente
         if (clienteIdRequest == null) {
-            throw new IllegalArgumentException("O clienteId é obrigatório para este perfil.");
+            throw new RegraNegocioException("O clienteId é obrigatório para este perfil.");
         }
         return clienteIdRequest;
     }
