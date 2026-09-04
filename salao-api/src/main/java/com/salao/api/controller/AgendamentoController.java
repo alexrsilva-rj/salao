@@ -27,17 +27,23 @@ public class AgendamentoController {
     private final AgendamentoService agendamentoService;
     private final JwtClaimsExtractor jwtClaimsExtractor;
 
+    /**
+     * Cria novo agendamento com validação de ownership (Issue 11 — CWE-639).
+     * CUSTOMER só pode criar agendamento para si mesmo — clienteId é derivado do token.
+     * RECEPTION pode criar para qualquer cliente especificando clienteId.
+     */
     @PostMapping
     @PreAuthorize("hasAnyRole('RECEPTION', 'CUSTOMER')")
     @Operation(summary = "Criar novo agendamento")
     public ResponseEntity<AgendamentoResponseDTO> criar(
-            @RequestParam UUID clienteId,
+            @RequestParam(required = false) UUID clienteId,
             @RequestParam UUID profissionalId,
             @RequestParam UUID servicoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataHoraInicio) {
+        UserContext ctx = jwtClaimsExtractor.extract();
         return ResponseEntity.ok(
                 AgendamentoResponseDTO.from(
-                        agendamentoService.criarAgendamento(clienteId, profissionalId, servicoId, dataHoraInicio)
+                        agendamentoService.criarAgendamento(clienteId, profissionalId, servicoId, dataHoraInicio, ctx)
                 )
         );
     }

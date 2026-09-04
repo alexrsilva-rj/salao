@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: salao-api
   namespace: default
-  labels:
-    app: salao-api
 spec:
   replicas: 1
   selector:
@@ -15,38 +13,23 @@ spec:
       labels:
         app: salao-api
     spec:
-      # Hardening Pod Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
       containers:
       - name: salao-api
         image: seu-registry/salao-api:1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
-        # Hardening Container Security Context
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - name: tmp-volume
-          mountPath: /tmp
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "prod"
+        # Issue 08: URL HTTPS obrigatória — sem IP de LAN hardcoded
         - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
           value: "https://keycloak.example.com/realms/salao-realm"
         - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
           value: "https://keycloak.example.com/realms/salao-realm/protocol/openid-connect/certs"
         - name: SPRING_DATASOURCE_URL
           value: "jdbc:postgresql://postgres-service:5432/salao_db"
-        # Credenciais movidas para Kubernetes Secrets
+        # Issue 13: credenciais injetadas via Secret (não plaintext)
         - name: DB_USER
           valueFrom:
             secretKeyRef:
@@ -62,7 +45,7 @@ spec:
             secretKeyRef:
               name: salao-api-secret
               key: api-token-secret
-        # Probes de integridade (Spring Boot Actuator)
+        # Issue 13: probes de saúde via Spring Boot Actuator
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
@@ -77,7 +60,7 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
           failureThreshold: 3
-        # Limites e reservas de recursos
+        # Issue 13: limites de recursos para evitar consumo excessivo
         resources:
           requests:
             memory: "512Mi"
@@ -85,9 +68,6 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
-      volumes:
-      - name: tmp-volume
-        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
