@@ -31,6 +31,10 @@ public class JwtClaimsExtractor {
     public UserContext extract() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new AccessDeniedException("Acesso negado: usuário não autenticado.");
+        }
+
         if (auth instanceof JwtAuthenticationToken jwtAuth) {
             String keycloakUserId = jwtAuth.getToken().getSubject();
             String role = extractPrimaryRole(jwtAuth);
@@ -40,11 +44,15 @@ public class JwtClaimsExtractor {
                     .build();
         }
 
-        // Autenticação via x-api-token → trata como acesso administrativo de recepção
-        return UserContext.builder()
-                .keycloakUserId("api-token-user")
-                .role("ROLE_RECEPTION")
-                .build();
+        // Autenticação via x-api-token (ApiTokenAuthenticationFilter)
+        if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_RECEPTION"))) {
+            return UserContext.builder()
+                    .keycloakUserId("api-token-user")
+                    .role("ROLE_RECEPTION")
+                    .build();
+        }
+
+        throw new AccessDeniedException("Acesso negado: tipo de autenticação não suportado.");
     }
 
     /**

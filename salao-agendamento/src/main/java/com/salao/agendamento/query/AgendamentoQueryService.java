@@ -1,6 +1,7 @@
 package com.salao.agendamento.query;
 
 import com.salao.agendamento.query.dto.RelatorioAgendamentoDTO;
+import com.salao.common.exception.RegraNegocioException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,13 @@ public class AgendamentoQueryService {
 
    @Transactional(readOnly = true)
    public List<RelatorioAgendamentoDTO> buscarRelatorioPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
+       if (inicio == null || fim == null) {
+           throw new IllegalArgumentException("As datas de início e fim do período são obrigatórias.");
+       }
+       if (inicio.isAfter(fim)) {
+           throw new RegraNegocioException("A data inicial não pode ser posterior à data final.");
+       }
+
        String jpql = "SELECT new com.salao.agendamento.query.dto.RelatorioAgendamentoDTO(" +
                      "a.id, c.nome, p.nome, s.nome, s.preco, a.dataHoraInicio, a.status) " +
                      "FROM Agendamento a " +

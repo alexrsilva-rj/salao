@@ -10,6 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 
 /**
@@ -39,7 +41,7 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
         String apiToken = request.getHeader(API_TOKEN_HEADER);
 
         if (apiToken != null && !apiToken.isBlank()) {
-            if (validApiToken.equals(apiToken)) {
+            if (isValidToken(apiToken)) {
                 List<SimpleGrantedAuthority> authorities = List.of(
                         new SimpleGrantedAuthority("ROLE_RECEPTION"),
                         new SimpleGrantedAuthority("SCOPE_agendamento:escrever")
@@ -54,5 +56,14 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isValidToken(String incomingToken) {
+        if (validApiToken == null || validApiToken.isBlank() || incomingToken == null) {
+            return false;
+        }
+        byte[] expectedBytes = validApiToken.getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = incomingToken.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 }

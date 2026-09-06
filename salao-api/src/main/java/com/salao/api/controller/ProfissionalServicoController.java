@@ -27,16 +27,16 @@ public class ProfissionalServicoController {
    private final ServicoRepository servicoRepository;
 
    @GetMapping("/profissionais")
-   @PreAuthorize("hasAuthority('SCOPE_agendamento:escrever')")
+   @PreAuthorize("isAuthenticated()")
    @Operation(summary = "Listar profissionais ativos")
    public ResponseEntity<List<Profissional>> listarProfissionais() {
-       return ResponseEntity.ok(profissionalRepository.findAll());
+       return ResponseEntity.ok(profissionalRepository.findByAtivoTrue());
    }
 
    @GetMapping("/servicos")
-   @PreAuthorize("hasAuthority('SCOPE_agendamento:escrever')")
+   @PreAuthorize("isAuthenticated()")
    @Operation(summary = "Listar serviços disponíveis")
    public ResponseEntity<List<Servico>> listarServicos() {
-       return ResponseEntity.ok(servicoRepository.findAll());
+       return ResponseEntity.ok(servicoRepository.findByAtivoTrue());
    }
 }
