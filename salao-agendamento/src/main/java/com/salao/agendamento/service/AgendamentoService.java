@@ -65,10 +65,24 @@ public class AgendamentoService {
         }
 
         Cliente cliente = clienteService.buscarPorId(clienteId);
+        if (cliente.isAnonimizado()) {
+            throw new RegraNegocioException(
+                    "Não é possível realizar agendamento para um cliente anonimizado.");
+        }
+
         Profissional profissional = profissionalRepository.findById(profissionalId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Profissional não encontrado."));
+        if (!profissional.isAtivo()) {
+            throw new RegraNegocioException(
+                    "O profissional selecionado não está ativo para agendamentos.");
+        }
+
         Servico servico = servicoRepository.findById(servicoId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Serviço não encontrado."));
+        if (!servico.isAtivo()) {
+            throw new RegraNegocioException(
+                    "O serviço selecionado não está ativo para agendamentos.");
+        }
 
         LocalDateTime dataHoraFim = dataHoraInicio.plusMinutes(servico.getDuracaoMinutos());
 

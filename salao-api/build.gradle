@@ -2,6 +2,10 @@ plugins {
     id 'org.springframework.boot'
 }
 
+jar {
+    enabled = false
+}
+
 dependencies {
     implementation project(':salao-common')
     implementation project(':salao-cliente')

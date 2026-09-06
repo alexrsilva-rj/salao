@@ -4,6 +4,7 @@ import com.salao.agendamento.model.Agendamento;
 import com.salao.agendamento.repository.AgendamentoRepository;
 import com.salao.common.exception.EntidadeNaoEncontradaException;
 import com.salao.common.exception.PagamentoDuplicadoException;
+import com.salao.common.exception.RegraNegocioException;
 import com.salao.financeiro.model.Financeiro;
 import com.salao.financeiro.model.FormaPagamentoEnum;
 import com.salao.financeiro.repository.FinanceiroRepository;
@@ -28,6 +29,7 @@ public class FinanceiroService {
     * <p><strong>Validações aplicadas (Issues 10 e 18 / V3):</strong>
     * <ul>
     *   <li>Agendamento deve existir</li>
+    *   <li>Agendamento não pode estar cancelado</li>
     *   <li>Agendamento não pode ter pagamento duplicado (idempotência — HTTP 409)</li>
     *   <li>Percentual de comissão já foi validado pelo controller (0.00–100.00)</li>
     *   <li>FormaPagamento tipada via enum (sem strings arbitrárias)</li>
@@ -45,6 +47,11 @@ public class FinanceiroService {
 
        Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
                .orElseThrow(() -> new EntidadeNaoEncontradaException("Agendamento não encontrado."));
+
+       if ("CANCELADO".equalsIgnoreCase(agendamento.getStatus())) {
+           throw new RegraNegocioException(
+                   "Não é permitido registrar pagamento para um agendamento cancelado.");
+       }
 
        // Issue 18 / V3: impede pagamentos duplicados para o mesmo agendamento (HTTP 409 Conflict)
        if (financeiroRepository.existsByAgendamentoId(agendamentoId)) {
@@ -69,6 +76,9 @@ public class FinanceiroService {
                .formaPagamento(formaPagamento)
                .status("PAGO")
                .build();
+
+       agendamento.setStatus("PAGO");
+       agendamentoRepository.save(agendamento);
 
        return financeiroRepository.save(financeiro);
    }

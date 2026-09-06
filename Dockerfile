@@ -6,10 +6,10 @@
 FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /build
 COPY . .
-RUN if [ -f ./gradlew ]; then ./gradlew :salao-api:bootJar --no-daemon -x test; else gradle :salao-api:bootJar --no-daemon -x test; fi
+RUN chmod +x ./gradlew && ./gradlew :salao-api:bootJar --no-daemon -x test
 
 # Stage 2: Runtime enxuta com usuário não-root (UID/GID 10001)
-FROM eclipse-temurin:21-jre-alpine@sha256:2bc7e6ab9e53e5e8b17f72e8c80a91bfd3eb72c0b6c1a64f5706ef66e40199cd
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 

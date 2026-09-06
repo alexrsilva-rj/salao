@@ -56,8 +56,12 @@ public class AuditService {
             var attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attrs != null) {
                 String ip = attrs.getRequest().getHeader("X-Forwarded-For");
-                return (ip != null && !ip.isBlank()) ? ip.split(",")[0].trim()
-                        : attrs.getRequest().getRemoteAddr();
+                if (ip != null && !ip.isBlank()) {
+                    String clientIp = ip.split(",")[0].trim();
+                    return clientIp.length() > 45 ? clientIp.substring(0, 45) : clientIp;
+                }
+                String remoteAddr = attrs.getRequest().getRemoteAddr();
+                return (remoteAddr != null && remoteAddr.length() > 45) ? remoteAddr.substring(0, 45) : remoteAddr;
             }
         } catch (Exception ignored) { }
         return null;

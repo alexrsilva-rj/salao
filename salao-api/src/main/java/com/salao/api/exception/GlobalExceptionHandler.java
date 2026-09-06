@@ -5,6 +5,8 @@ import com.salao.common.exception.EntidadeNaoEncontradaException;
 import com.salao.common.exception.PagamentoDuplicadoException;
 import com.salao.common.exception.RegraNegocioException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -81,6 +83,19 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining("; "));
         log.warn("Validação falhou: {} — path: {}", mensagem, request.getRequestURI());
+        return buildResponse(HttpStatus.BAD_REQUEST, mensagem, request);
+    }
+
+    /**
+     * Validação de parâmetros anotados com @Validated em controllers/serviços.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            ConstraintViolationException ex, HttpServletRequest request) {
+        String mensagem = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+        log.warn("Violação de restrição: {} — path: {}", mensagem, request.getRequestURI());
         return buildResponse(HttpStatus.BAD_REQUEST, mensagem, request);
     }
 
