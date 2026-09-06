@@ -69,16 +69,34 @@ public class JwtClaimsExtractor {
         // Tenta extrair de realm_access.roles (padrão Keycloak)
         Map<String, Object> realmAccess = jwtAuth.getToken().getClaim("realm_access");
         if (realmAccess != null && realmAccess.get("roles") instanceof List<?> roles) {
-            if (containsRole(roles, "RECEPTION")) return "ROLE_RECEPTION";
-            if (containsRole(roles, "PROFESSIONAL")) return "ROLE_PROFESSIONAL";
-            if (containsRole(roles, "CUSTOMER")) return "ROLE_CUSTOMER";
+            if (containsRole(roles, "RECEPTION", "ADMIN", "GERENTE")) return "ROLE_RECEPTION";
+            if (containsRole(roles, "PROFESSIONAL", "PROFISSIONAL")) return "ROLE_PROFESSIONAL";
+            if (containsRole(roles, "CUSTOMER", "CLIENTE")) return "ROLE_CUSTOMER";
         }
 
-        // Fallback: verifica authorities já mapeadas pelo Spring Security (sem default fail-open)
+        // Tenta extrair de resource_access.*.roles (client roles)
+        Map<String, Object> resourceAccess = jwtAuth.getToken().getClaim("resource_access");
+        if (resourceAccess != null) {
+            for (Object clientObj : resourceAccess.values()) {
+                if (clientObj instanceof Map<?, ?> clientMap && clientMap.get("roles") instanceof List<?> clientRoles) {
+                    if (containsRole(clientRoles, "RECEPTION", "ADMIN", "GERENTE")) return "ROLE_RECEPTION";
+                    if (containsRole(clientRoles, "PROFESSIONAL", "PROFISSIONAL")) return "ROLE_PROFESSIONAL";
+                    if (containsRole(clientRoles, "CUSTOMER", "CLIENTE")) return "ROLE_CUSTOMER";
+                }
+            }
+        }
+
+        // Fallback: verifica authorities já mapeadas pelo Spring Security (com suporte a sinônimos)
         Optional<String> mappedRole = jwtAuth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(a -> a.startsWith("ROLE_") &&
-                        (a.equals("ROLE_RECEPTION") || a.equals("ROLE_PROFESSIONAL") || a.equals("ROLE_CUSTOMER")))
+                .map(String::toUpperCase)
+                .map(a -> switch (a) {
+                    case "ROLE_ADMIN", "ROLE_GERENTE", "ROLE_RECEPTION" -> "ROLE_RECEPTION";
+                    case "ROLE_PROFISSIONAL", "ROLE_PROFESSIONAL" -> "ROLE_PROFESSIONAL";
+                    case "ROLE_CLIENTE", "ROLE_CUSTOMER" -> "ROLE_CUSTOMER";
+                    default -> a;
+                })
+                .filter(a -> a.equals("ROLE_RECEPTION") || a.equals("ROLE_PROFESSIONAL") || a.equals("ROLE_CUSTOMER"))
                 .findFirst();
 
         return mappedRole.orElseThrow(() ->
@@ -87,9 +105,18 @@ public class JwtClaimsExtractor {
                         "Verifique o mapeamento de roles no realm Keycloak."));
     }
 
-    private boolean containsRole(List<?> roles, String targetRole) {
+    private boolean containsRole(List<?> roles, String... targetRoles) {
         return roles.stream()
-                .anyMatch(r -> r instanceof String s &&
-                        s.equalsIgnoreCase(targetRole));
+                .anyMatch(r -> {
+                    if (r instanceof String s) {
+                        String clean = s.toUpperCase().startsWith("ROLE_") ? s.toUpperCase().substring(5) : s.toUpperCase();
+                        for (String target : targetRoles) {
+                            if (clean.equalsIgnoreCase(target)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                });
     }
 }

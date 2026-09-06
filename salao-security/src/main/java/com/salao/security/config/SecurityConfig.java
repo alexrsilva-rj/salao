@@ -96,10 +96,33 @@ public class SecurityConfig {
                 if (rolesClaim instanceof List<?> roles) {
                     for (Object r : roles) {
                         if (r instanceof String roleName) {
-                            // Normaliza: "reception" → "ROLE_RECEPTION"
                             String upper = roleName.toUpperCase();
                             String authority = upper.startsWith("ROLE_") ? upper : "ROLE_" + upper;
                             authorities.add(new SimpleGrantedAuthority(authority));
+
+                            // Mapeia sinônimos / roles legadas do Keycloak para garantir compatibilidade
+                            mapRoleAliases(upper, authorities);
+                        }
+                    }
+                }
+            }
+
+            // Extrai roles de resource_access (client roles) caso existam
+            Object resourceAccess = jwt.getClaim("resource_access");
+            if (resourceAccess instanceof Map<?, ?> resourceMap) {
+                for (Object clientEntry : resourceMap.values()) {
+                    if (clientEntry instanceof Map<?, ?> clientMap) {
+                        Object clientRolesClaim = clientMap.get("roles");
+                        if (clientRolesClaim instanceof List<?> clientRoles) {
+                            for (Object r : clientRoles) {
+                                if (r instanceof String roleName) {
+                                    String upper = roleName.toUpperCase();
+                                    String authority = upper.startsWith("ROLE_") ? upper : "ROLE_" + upper;
+                                    authorities.add(new SimpleGrantedAuthority(authority));
+
+                                    mapRoleAliases(upper, authorities);
+                                }
+                            }
                         }
                     }
                 }
@@ -116,5 +139,15 @@ public class SecurityConfig {
             return authorities;
         });
         return converter;
+    }
+
+    private static void mapRoleAliases(String roleName, List<GrantedAuthority> authorities) {
+        String clean = roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
+        switch (clean) {
+            case "ADMIN", "GERENTE" -> authorities.add(new SimpleGrantedAuthority("ROLE_RECEPTION"));
+            case "CLIENTE" -> authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
+            case "PROFISSIONAL" -> authorities.add(new SimpleGrantedAuthority("ROLE_PROFESSIONAL"));
+            default -> {}
+        }
     }
 }
